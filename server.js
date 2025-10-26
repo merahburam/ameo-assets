@@ -87,6 +87,7 @@ app.post("/api/feedback", async (req, res) => {
         console.log(`✅ Feedback generated for: "${frame.frameData.name}" (${feedbackArray.length} points)`);
       } catch (frameError) {
         console.error(`❌ Error processing frame ${frame.frameId}:`, frameError.message);
+        console.error(`Frame data:`, frame.frameData);
         feedbackList.push({
           frameId: frame.frameId,
           feedback: "Unable to generate feedback at this time",
@@ -167,11 +168,18 @@ Respond with ONLY JSON array (no markdown, no extra text):
     });
 
     if (!response.ok) {
-      throw new Error(`DeepSeek API error: ${response.statusText}`);
+      const errorData = await response.json();
+      console.error(`DeepSeek API error (${response.status}):`, errorData);
+      throw new Error(`DeepSeek API error: ${response.statusText} - ${JSON.stringify(errorData)}`);
     }
 
     const data = await response.json();
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error("Invalid DeepSeek response structure:", data);
+      throw new Error("Invalid response from DeepSeek API");
+    }
     const content = data.choices[0].message.content;
+    console.log(`📨 DeepSeek response (${content.length} chars):`, content.substring(0, 200));
 
     // Try to parse as array (multiple feedback points)
     const arrayMatch = content.match(/\[[\s\S]*\]/);
@@ -213,17 +221,20 @@ Respond with ONLY JSON array (no markdown, no extra text):
 // Simple rule-based feedback (fallback)
 function generateSimpleFeedback(frameData) {
   const feedback_list = [
-    "Great design! Consider testing on different screen sizes.",
-    "Nice work! Ensure sufficient contrast for accessibility.",
-    "Clean layout! Make sure spacing is consistent.",
-    "Good visual design! Consider the user experience on mobile.",
+    { feedback: "Great design! Consider testing on different screen sizes.", category: "layout" },
+    { feedback: "Nice work! Ensure sufficient contrast for accessibility.", category: "accessibility" },
+    { feedback: "Clean layout! Make sure spacing is consistent.", category: "spacing" },
+    { feedback: "Good visual design! Consider the user experience on mobile.", category: "responsive" },
   ];
 
-  return {
-    feedback: feedback_list[Math.floor(Math.random() * feedback_list.length)],
-    category: "general",
-    confidence: 0.7 + Math.random() * 0.2,
-  };
+  // Return as array (consistent with API expectations)
+  return [
+    {
+      feedback: feedback_list[Math.floor(Math.random() * feedback_list.length)].feedback,
+      category: feedback_list[Math.floor(Math.random() * feedback_list.length)].category,
+      confidence: 0.7 + Math.random() * 0.2,
+    }
+  ];
 }
 
 // ============================================
