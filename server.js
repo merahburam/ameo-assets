@@ -74,12 +74,17 @@ app.post("/api/feedback", async (req, res) => {
     const feedbackList = [];
     for (const frame of frames) {
       try {
-        const feedback = await generateDesignFeedback(frame.frameData);
-        feedbackList.push({
-          frameId: frame.frameId,
-          ...feedback,
+        const feedbackArray = await generateDesignFeedback(frame.frameData);
+        // feedbackArray is now an array of feedback items
+        feedbackArray.forEach((feedback) => {
+          feedbackList.push({
+            frameId: frame.frameId,
+            feedback: feedback.feedback,
+            category: feedback.category,
+            confidence: feedback.confidence,
+          });
         });
-        console.log(`✅ Feedback generated for: "${frame.frameData.name}"`);
+        console.log(`✅ Feedback generated for: "${frame.frameData.name}" (${feedbackArray.length} points)`);
       } catch (frameError) {
         console.error(`❌ Error processing frame ${frame.frameId}:`, frameError.message);
         feedbackList.push({
@@ -114,16 +119,33 @@ async function generateDesignFeedback(frameData) {
   }
 
   try {
-    const prompt = `You are Ameo, a friendly UX/UI design expert cat. Analyze this Figma frame and provide brief, actionable feedback.
+    const prompt = `You are Ameo, a friendly UX/UI design expert cat. Analyze this Figma frame and provide detailed feedback on multiple aspects.
 
 Frame: ${frameData.name} (${frameData.width}x${frameData.height}px)
+Has colors: ${frameData.fills ? frameData.fills.length > 0 : false}
+Has borders: ${frameData.strokes ? frameData.strokes.length > 0 : false}
 
-Provide 1-2 sentences of friendly feedback. Respond with ONLY JSON:
-{
-  "feedback": "Your feedback here",
-  "category": "layout",
-  "confidence": 0.85
-}`;
+Provide feedback as a JSON array with 3-4 specific comments about different aspects (layout, spacing, colors, typography, accessibility, etc). Each comment should be 1-2 sentences and friendly.
+
+Respond with ONLY JSON array (no markdown, no extra text):
+[
+  {
+    "feedback": "Comment about layout/spacing",
+    "category": "spacing"
+  },
+  {
+    "feedback": "Comment about colors/contrast",
+    "category": "color"
+  },
+  {
+    "feedback": "Comment about typography/readability",
+    "category": "typography"
+  },
+  {
+    "feedback": "Comment about accessibility",
+    "category": "accessibility"
+  }
+]`;
 
     const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
@@ -151,21 +173,37 @@ Provide 1-2 sentences of friendly feedback. Respond with ONLY JSON:
     const data = await response.json();
     const content = data.choices[0].message.content;
 
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      return {
+    // Try to parse as array (multiple feedback points)
+    const arrayMatch = content.match(/\[[\s\S]*\]/);
+    if (arrayMatch) {
+      const parsed = JSON.parse(arrayMatch[0]);
+      if (Array.isArray(parsed)) {
+        // Return array of feedback items
+        return parsed.map((item) => ({
+          feedback: item.feedback || "Nice design!",
+          category: item.category || "general",
+          confidence: item.confidence || 0.8,
+        }));
+      }
+    }
+
+    // Fallback to single feedback object
+    const objMatch = content.match(/\{[\s\S]*\}/);
+    if (objMatch) {
+      const parsed = JSON.parse(objMatch[0]);
+      return [{
         feedback: parsed.feedback || "Nice design!",
         category: parsed.category || "general",
         confidence: parsed.confidence || 0.8,
-      };
+      }];
     }
 
-    return {
+    // If no JSON found, return single generic feedback
+    return [{
       feedback: content,
       category: "general",
       confidence: 0.75,
-    };
+    }];
   } catch (error) {
     console.error("DeepSeek error:", error.message);
     return generateSimpleFeedback(frameData);
