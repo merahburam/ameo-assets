@@ -267,13 +267,20 @@ async function initializeDatabase() {
 
     // Create conversations table
     console.log("📝 Creating conversations table...");
+    // Drop if exists with bad schema
+    try {
+      await pool.query(`DROP TABLE IF EXISTS conversations CASCADE;`);
+      console.log("🗑️ Dropped old conversations table if it existed");
+    } catch (e) {
+      console.log("ℹ️ No old conversations table to drop");
+    }
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS conversations (
         id SERIAL PRIMARY KEY,
         user1_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         user2_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(LEAST(user1_id, user2_id), GREATEST(user1_id, user2_id))
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
     console.log("✅ Conversations table created/exists");
