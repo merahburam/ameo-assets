@@ -78,7 +78,7 @@ app.post("/api/feedback", async (req, res) => {
       });
     }
 
-    console.log(`📝 Processing feedback for ${frames.length} frame(s)`);
+    console.log(`Processing feedback for ${frames.length} frame(s)`);
 
     const feedbackList = [];
     for (const frame of frames) {
@@ -93,10 +93,9 @@ app.post("/api/feedback", async (req, res) => {
             confidence: feedback.confidence,
           });
         });
-        console.log(`✅ Feedback generated for: "${frame.frameData.name}" (${feedbackArray.length} points)`);
+        console.log(`Feedback generated for: "${frame.frameData.name}" (${feedbackArray.length} points)`);
       } catch (frameError) {
-        console.error(`❌ Error processing frame ${frame.frameId}:`, frameError.message);
-        console.error(`Frame data:`, frame.frameData);
+        console.error(`Error processing frame ${frame.frameId}:`, frameError.message);
         feedbackList.push({
           frameId: frame.frameId,
           feedback: "Unable to generate feedback at this time",
@@ -108,7 +107,7 @@ app.post("/api/feedback", async (req, res) => {
 
     res.json(feedbackList);
   } catch (error) {
-    console.error("❌ Error in /api/feedback:", error.message);
+    console.error("Feedback API error:", error.message);
     res.status(500).json({
       error: "Failed to generate feedback",
       message: process.env.NODE_ENV === "development" ? error.message : undefined,
@@ -188,7 +187,7 @@ Respond with ONLY JSON array (no markdown, no extra text):
       throw new Error("Invalid response from DeepSeek API");
     }
     const content = data.choices[0].message.content;
-    console.log(`📨 DeepSeek response (${content.length} chars):`, content.substring(0, 200));
+    console.log(`DeepSeek response (${content.length} chars)`);
 
     // Try to parse as array (multiple feedback points)
     const arrayMatch = content.match(/\[[\s\S]*\]/);
@@ -252,10 +251,7 @@ function generateSimpleFeedback(frameData) {
 
 async function initializeDatabase() {
   try {
-    console.log("🔄 Starting database initialization...");
-
     // Create users table
-    console.log("📝 Creating users table...");
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -263,16 +259,13 @@ async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log("✅ Users table created/exists");
 
     // Create conversations table
-    console.log("📝 Creating conversations table...");
     // Drop if exists with bad schema
     try {
       await pool.query(`DROP TABLE IF EXISTS conversations CASCADE;`);
-      console.log("🗑️ Dropped old conversations table if it existed");
     } catch (e) {
-      console.log("ℹ️ No old conversations table to drop");
+      // Ignore if table doesn't exist
     }
 
     await pool.query(`
@@ -283,10 +276,8 @@ async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log("✅ Conversations table created/exists");
 
     // Create messages table
-    console.log("📝 Creating messages table...");
     await pool.query(`
       CREATE TABLE IF NOT EXISTS messages (
         id SERIAL PRIMARY KEY,
@@ -297,12 +288,10 @@ async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log("✅ Messages table created/exists");
 
-    console.log("✅✅✅ Database tables fully initialized");
+    console.log("Database tables initialized successfully");
   } catch (error) {
-    console.error("❌ Database initialization error:", error.message);
-    console.error("Full error:", error);
+    console.error("Database initialization error:", error.message);
   }
 }
 
@@ -334,7 +323,7 @@ app.post("/api/messages/register", async (req, res) => {
 
     res.json({ id: result.rows[0].id, cat_name: result.rows[0].cat_name, created: true });
   } catch (error) {
-    console.error("❌ Register error:", error.message);
+    console.error("Register error:", error.message);
     res.status(500).json({ error: "Failed to register user" });
   }
 });
@@ -349,7 +338,7 @@ app.get("/api/messages/check-name/:name", async (req, res) => {
     const result = await pool.query("SELECT id FROM users WHERE cat_name = $1", [name]);
     res.json({ exists: result.rows.length > 0, id: result.rows[0]?.id || null });
   } catch (error) {
-    console.error("❌ Check name error:", error.message);
+    console.error("Check name error:", error.message);
     res.status(500).json({ error: "Failed to check cat name" });
   }
 });
@@ -394,7 +383,7 @@ app.get("/api/messages/list/:user_cat_name", async (req, res) => {
 
     res.json({ conversations: convResult.rows });
   } catch (error) {
-    console.error("❌ Get conversations error:", error.message);
+    console.error("Get conversations error:", error.message);
     res.status(500).json({ error: "Failed to get conversations" });
   }
 });
@@ -426,7 +415,7 @@ app.get("/api/messages/unread/:user_cat_name", async (req, res) => {
 
     res.json({ unread_count: parseInt(result.rows[0].unread_count) });
   } catch (error) {
-    console.error("❌ Get unread error:", error.message);
+    console.error("Get unread count error:", error.message);
     res.status(500).json({ error: "Failed to get unread count" });
   }
 });
@@ -481,9 +470,8 @@ app.post("/api/messages/send", async (req, res) => {
 
     res.json({ id: msgResult.rows[0].id, created_at: msgResult.rows[0].created_at });
   } catch (error) {
-    console.error("❌ Send message error:", error.message);
-    console.error("Full error:", error);
-    res.status(500).json({ error: "Failed to send message", details: error.message });
+    console.error("Send message error:", error.message);
+    res.status(500).json({ error: "Failed to send message" });
   }
 });
 
@@ -541,9 +529,8 @@ app.get("/api/messages/:user_cat_name/:other_cat_name", async (req, res) => {
       otherUserInfo: { cat_name: other_cat_name, id: otherId },
     });
   } catch (error) {
-    console.error("❌ Get conversation error:", error.message);
-    console.error("Full error:", error);
-    res.status(500).json({ error: "Failed to get conversation", details: error.message });
+    console.error("Get conversation error:", error.message);
+    res.status(500).json({ error: "Failed to get conversation" });
   }
 });
 
@@ -564,45 +551,20 @@ app.use((req, res) => {
 // ============================================
 
 async function startServer() {
-  console.log("🚀 Starting server...");
-  console.log("📦 DATABASE_URL:", process.env.DATABASE_URL ? "✅ SET" : "❌ NOT SET");
-
   // Initialize database if DATABASE_URL is configured
   if (process.env.DATABASE_URL) {
-    console.log("🔗 Attempting to connect to database...");
     await initializeDatabase();
   } else {
-    console.warn("❌ DATABASE_URL not set - messaging features will not work");
+    console.warn("DATABASE_URL not set - messaging features will not work");
   }
 
   app.listen(PORT, () => {
-    console.log(`
-╔════════════════════════════════════════╗
-║   🐱 Ameo Assets Server Running 🖼️    ║
-╚════════════════════════════════════════╝
-
-📍 Server: http://localhost:${PORT}
-🏥 Health: http://localhost:${PORT}/health
-📦 Assets: http://localhost:${PORT}/
-💬 Messaging: /api/messages/* (requires DATABASE_URL)
-
-Example asset URLs:
-  http://ameo-production.up.railway.app/sprite-idle-01.png
-  http://ameo-production.up.railway.app/sprite-walk-01.png
-
-Messaging Endpoints:
-  POST   /api/messages/register
-  GET    /api/messages/check-name/:name
-  POST   /api/messages/send
-  GET    /api/messages/:user/:other
-  GET    /api/messages/list/:user
-  GET    /api/messages/unread/:user
-`);
+    console.log(`Ameo Assets Server running on http://localhost:${PORT}`);
   });
 }
 
 startServer().catch((error) => {
-  console.error("❌ Failed to start server:", error);
+  console.error("Failed to start server:", error);
   process.exit(1);
 });
 
