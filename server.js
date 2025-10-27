@@ -323,6 +323,9 @@ app.post("/api/messages/register", async (req, res) => {
   }
 });
 
+// IMPORTANT: Specific routes MUST come before generic routes with same parameter count
+// Otherwise /api/messages/unread/:name will match /:user/:other pattern
+
 // Check if cat name exists
 app.get("/api/messages/check-name/:name", async (req, res) => {
   try {
@@ -332,6 +335,83 @@ app.get("/api/messages/check-name/:name", async (req, res) => {
   } catch (error) {
     console.error("❌ Check name error:", error.message);
     res.status(500).json({ error: "Failed to check cat name" });
+  }
+});
+
+// Get all conversations for a user (must come before :user/:other pattern)
+app.get("/api/messages/list/:user_cat_name", async (req, res) => {
+  try {
+    const { user_cat_name } = req.params;
+
+    const userResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [
+      user_cat_name,
+    ]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userResult.rows[0].id;
+
+    // Get all conversations with latest message
+    const convResult = await pool.query(
+      `SELECT
+        c.id,
+        CASE
+          WHEN c.user1_id = $1 THEN u2.cat_name
+          ELSE u1.cat_name
+        END as other_cat_name,
+        CASE
+          WHEN c.user1_id = $1 THEN c.user2_id
+          ELSE c.user1_id
+        END as other_user_id,
+        (SELECT m.content FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) as last_message,
+        (SELECT m.created_at FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) as last_message_time,
+        (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id AND m.is_read = FALSE AND m.sender_id != $1) as unread_count
+       FROM conversations c
+       JOIN users u1 ON c.user1_id = u1.id
+       JOIN users u2 ON c.user2_id = u2.id
+       WHERE c.user1_id = $1 OR c.user2_id = $1
+       ORDER BY last_message_time DESC NULLS LAST`,
+      [userId]
+    );
+
+    res.json({ conversations: convResult.rows });
+  } catch (error) {
+    console.error("❌ Get conversations error:", error.message);
+    res.status(500).json({ error: "Failed to get conversations" });
+  }
+});
+
+// Get unread count (must come before :user/:other pattern)
+app.get("/api/messages/unread/:user_cat_name", async (req, res) => {
+  try {
+    const { user_cat_name } = req.params;
+
+    const userResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [
+      user_cat_name,
+    ]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userResult.rows[0].id;
+
+    const result = await pool.query(
+      `SELECT COUNT(*) as unread_count
+       FROM messages m
+       JOIN conversations c ON m.conversation_id = c.id
+       WHERE (c.user1_id = $1 OR c.user2_id = $1)
+       AND m.sender_id != $1
+       AND m.is_read = FALSE`,
+      [userId]
+    );
+
+    res.json({ unread_count: parseInt(result.rows[0].unread_count) });
+  } catch (error) {
+    console.error("❌ Get unread error:", error.message);
+    res.status(500).json({ error: "Failed to get unread count" });
   }
 });
 
@@ -446,83 +526,6 @@ app.get("/api/messages/:user_cat_name/:other_cat_name", async (req, res) => {
   } catch (error) {
     console.error("❌ Get conversation error:", error.message);
     res.status(500).json({ error: "Failed to get conversation" });
-  }
-});
-
-// Get all conversations for a user
-app.get("/api/messages/list/:user_cat_name", async (req, res) => {
-  try {
-    const { user_cat_name } = req.params;
-
-    const userResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [
-      user_cat_name,
-    ]);
-
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const userId = userResult.rows[0].id;
-
-    // Get all conversations with latest message
-    const convResult = await pool.query(
-      `SELECT
-        c.id,
-        CASE
-          WHEN c.user1_id = $1 THEN u2.cat_name
-          ELSE u1.cat_name
-        END as other_cat_name,
-        CASE
-          WHEN c.user1_id = $1 THEN c.user2_id
-          ELSE c.user1_id
-        END as other_user_id,
-        (SELECT m.content FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) as last_message,
-        (SELECT m.created_at FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) as last_message_time,
-        (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id AND m.is_read = FALSE AND m.sender_id != $1) as unread_count
-       FROM conversations c
-       JOIN users u1 ON c.user1_id = u1.id
-       JOIN users u2 ON c.user2_id = u2.id
-       WHERE c.user1_id = $1 OR c.user2_id = $1
-       ORDER BY last_message_time DESC NULLS LAST`,
-      [userId]
-    );
-
-    res.json({ conversations: convResult.rows });
-  } catch (error) {
-    console.error("❌ Get conversations error:", error.message);
-    res.status(500).json({ error: "Failed to get conversations" });
-  }
-});
-
-// Get unread count
-app.get("/api/messages/unread/:user_cat_name", async (req, res) => {
-  try {
-    const { user_cat_name } = req.params;
-
-    const userResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [
-      user_cat_name,
-    ]);
-
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const userId = userResult.rows[0].id;
-
-    const result = await pool.query(
-      `SELECT COUNT(*) as unread_count
-       FROM messages m
-       JOIN conversations c ON m.conversation_id = c.id
-       WHERE (c.user1_id = $1 OR c.user2_id = $1)
-       AND m.sender_id != $1
-       AND m.is_read = FALSE`,
-      [userId]
-    );
-
-    res.json({ unread_count: parseInt(result.rows[0].unread_count) });
-  } catch (error) {
-    console.error("❌ Get unread error:", error.message);
-    res.status(500).json({ error: "Failed to get unread count" });
   }
 });
 
