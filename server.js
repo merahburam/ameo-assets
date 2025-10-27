@@ -3,20 +3,29 @@
  * Serves:
  * 1. Static assets (sprites)
  * 2. AI feedback via DeepSeek API
+ * 3. Messaging system via PostgreSQL
  *
  * Deploy to Railway:
  * 1. Set DEEPSEEK_API_KEY environment variable
- * 2. Run: npm install express cors dotenv
- * 3. Run: node server.js
+ * 2. Set DATABASE_URL for PostgreSQL
+ * 3. Run: npm install express cors dotenv pg
+ * 4. Run: node server.js
  */
 
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
+const { Pool } = require("pg");
 require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Database connection
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+});
 
 // Middleware
 app.use(cors());
@@ -238,6 +247,286 @@ function generateSimpleFeedback(frameData) {
 }
 
 // ============================================
+// Database Initialization
+// ============================================
+
+async function initializeDatabase() {
+  try {
+    // Create users table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        cat_name VARCHAR(255) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create conversations table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS conversations (
+        id SERIAL PRIMARY KEY,
+        user1_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        user2_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(LEAST(user1_id, user2_id), GREATEST(user1_id, user2_id))
+      );
+    `);
+
+    // Create messages table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id SERIAL PRIMARY KEY,
+        conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+        sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        content TEXT NOT NULL,
+        is_read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    console.log("✅ Database tables initialized");
+  } catch (error) {
+    console.error("❌ Database initialization error:", error.message);
+  }
+}
+
+// ============================================
+// Messaging API Endpoints
+// ============================================
+
+// Register or get user by cat name
+app.post("/api/messages/register", async (req, res) => {
+  try {
+    const { cat_name } = req.body;
+
+    if (!cat_name || cat_name.trim().length === 0) {
+      return res.status(400).json({ error: "Cat name is required" });
+    }
+
+    // Check if user already exists
+    let result = await pool.query("SELECT id FROM users WHERE cat_name = $1", [cat_name]);
+
+    if (result.rows.length > 0) {
+      return res.json({ id: result.rows[0].id, cat_name, created: false });
+    }
+
+    // Create new user
+    result = await pool.query(
+      "INSERT INTO users (cat_name) VALUES ($1) RETURNING id, cat_name, created_at",
+      [cat_name]
+    );
+
+    res.json({ id: result.rows[0].id, cat_name: result.rows[0].cat_name, created: true });
+  } catch (error) {
+    console.error("❌ Register error:", error.message);
+    res.status(500).json({ error: "Failed to register user" });
+  }
+});
+
+// Check if cat name exists
+app.get("/api/messages/check-name/:name", async (req, res) => {
+  try {
+    const { name } = req.params;
+    const result = await pool.query("SELECT id FROM users WHERE cat_name = $1", [name]);
+    res.json({ exists: result.rows.length > 0, id: result.rows[0]?.id || null });
+  } catch (error) {
+    console.error("❌ Check name error:", error.message);
+    res.status(500).json({ error: "Failed to check cat name" });
+  }
+});
+
+// Send a message
+app.post("/api/messages/send", async (req, res) => {
+  try {
+    const { sender_cat_name, recipient_cat_name, content } = req.body;
+
+    if (!sender_cat_name || !recipient_cat_name || !content) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Get user IDs
+    const senderResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [
+      sender_cat_name,
+    ]);
+    const recipientResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [
+      recipient_cat_name,
+    ]);
+
+    if (senderResult.rows.length === 0 || recipientResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const senderId = senderResult.rows[0].id;
+    const recipientId = recipientResult.rows[0].id;
+
+    // Get or create conversation
+    let convResult = await pool.query(
+      `SELECT id FROM conversations
+       WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $2 AND user2_id = $1)`,
+      [senderId, recipientId]
+    );
+
+    let conversationId;
+    if (convResult.rows.length === 0) {
+      convResult = await pool.query(
+        "INSERT INTO conversations (user1_id, user2_id) VALUES ($1, $2) RETURNING id",
+        [senderId, recipientId]
+      );
+      conversationId = convResult.rows[0].id;
+    } else {
+      conversationId = convResult.rows[0].id;
+    }
+
+    // Insert message
+    const msgResult = await pool.query(
+      "INSERT INTO messages (conversation_id, sender_id, content) VALUES ($1, $2, $3) RETURNING id, created_at",
+      [conversationId, senderId, content]
+    );
+
+    res.json({ id: msgResult.rows[0].id, created_at: msgResult.rows[0].created_at });
+  } catch (error) {
+    console.error("❌ Send message error:", error.message);
+    res.status(500).json({ error: "Failed to send message" });
+  }
+});
+
+// Get conversation with a specific user
+app.get("/api/messages/:user_cat_name/:other_cat_name", async (req, res) => {
+  try {
+    const { user_cat_name, other_cat_name } = req.params;
+
+    // Get user IDs
+    const userResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [
+      user_cat_name,
+    ]);
+    const otherResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [
+      other_cat_name,
+    ]);
+
+    if (userResult.rows.length === 0 || otherResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userResult.rows[0].id;
+    const otherId = otherResult.rows[0].id;
+
+    // Get conversation
+    const convResult = await pool.query(
+      `SELECT id FROM conversations
+       WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $2 AND user2_id = $1)`,
+      [userId, otherId]
+    );
+
+    if (convResult.rows.length === 0) {
+      return res.json({ messages: [], otherUserInfo: { cat_name: other_cat_name, id: otherId } });
+    }
+
+    const conversationId = convResult.rows[0].id;
+
+    // Get all messages and mark as read
+    const msgResult = await pool.query(
+      `SELECT m.id, m.content, m.sender_id, m.created_at, u.cat_name
+       FROM messages m
+       JOIN users u ON m.sender_id = u.id
+       WHERE m.conversation_id = $1
+       ORDER BY m.created_at ASC`,
+      [conversationId]
+    );
+
+    // Mark unread messages as read
+    await pool.query(
+      "UPDATE messages SET is_read = TRUE WHERE conversation_id = $1 AND sender_id = $2",
+      [conversationId, otherId]
+    );
+
+    res.json({
+      messages: msgResult.rows,
+      otherUserInfo: { cat_name: other_cat_name, id: otherId },
+    });
+  } catch (error) {
+    console.error("❌ Get conversation error:", error.message);
+    res.status(500).json({ error: "Failed to get conversation" });
+  }
+});
+
+// Get all conversations for a user
+app.get("/api/messages/list/:user_cat_name", async (req, res) => {
+  try {
+    const { user_cat_name } = req.params;
+
+    const userResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [
+      user_cat_name,
+    ]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userResult.rows[0].id;
+
+    // Get all conversations with latest message
+    const convResult = await pool.query(
+      `SELECT
+        c.id,
+        CASE
+          WHEN c.user1_id = $1 THEN u2.cat_name
+          ELSE u1.cat_name
+        END as other_cat_name,
+        CASE
+          WHEN c.user1_id = $1 THEN c.user2_id
+          ELSE c.user1_id
+        END as other_user_id,
+        (SELECT m.content FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) as last_message,
+        (SELECT m.created_at FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) as last_message_time,
+        (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id AND m.is_read = FALSE AND m.sender_id != $1) as unread_count
+       FROM conversations c
+       JOIN users u1 ON c.user1_id = u1.id
+       JOIN users u2 ON c.user2_id = u2.id
+       WHERE c.user1_id = $1 OR c.user2_id = $1
+       ORDER BY last_message_time DESC NULLS LAST`,
+      [userId]
+    );
+
+    res.json({ conversations: convResult.rows });
+  } catch (error) {
+    console.error("❌ Get conversations error:", error.message);
+    res.status(500).json({ error: "Failed to get conversations" });
+  }
+});
+
+// Get unread count
+app.get("/api/messages/unread/:user_cat_name", async (req, res) => {
+  try {
+    const { user_cat_name } = req.params;
+
+    const userResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [
+      user_cat_name,
+    ]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userResult.rows[0].id;
+
+    const result = await pool.query(
+      `SELECT COUNT(*) as unread_count
+       FROM messages m
+       JOIN conversations c ON m.conversation_id = c.id
+       WHERE (c.user1_id = $1 OR c.user2_id = $1)
+       AND m.sender_id != $1
+       AND m.is_read = FALSE`,
+      [userId]
+    );
+
+    res.json({ unread_count: parseInt(result.rows[0].unread_count) });
+  } catch (error) {
+    console.error("❌ Get unread error:", error.message);
+    res.status(500).json({ error: "Failed to get unread count" });
+  }
+});
+
+// ============================================
 // 404 Handler
 // ============================================
 
@@ -245,7 +534,7 @@ app.use((req, res) => {
   res.status(404).json({
     error: "Not found",
     path: req.path,
-    available: ["/health", "/", "POST /api/feedback"],
+    available: ["/health", "/", "POST /api/feedback", "POST /api/messages/register", "GET /api/messages/list/:cat_name"],
   });
 });
 
@@ -253,8 +542,16 @@ app.use((req, res) => {
 // Start Server
 // ============================================
 
-app.listen(PORT, () => {
-  console.log(`
+async function startServer() {
+  // Initialize database if DATABASE_URL is configured
+  if (process.env.DATABASE_URL) {
+    await initializeDatabase();
+  } else {
+    console.warn("⚠️  DATABASE_URL not set - messaging features will not work");
+  }
+
+  app.listen(PORT, () => {
+    console.log(`
 ╔════════════════════════════════════════╗
 ║   🐱 Ameo Assets Server Running 🖼️    ║
 ╚════════════════════════════════════════╝
@@ -262,12 +559,26 @@ app.listen(PORT, () => {
 📍 Server: http://localhost:${PORT}
 🏥 Health: http://localhost:${PORT}/health
 📦 Assets: http://localhost:${PORT}/
+💬 Messaging: /api/messages/* (requires DATABASE_URL)
 
 Example asset URLs:
   http://ameo-production.up.railway.app/sprite-idle-01.png
   http://ameo-production.up.railway.app/sprite-walk-01.png
-  etc.
+
+Messaging Endpoints:
+  POST   /api/messages/register
+  GET    /api/messages/check-name/:name
+  POST   /api/messages/send
+  GET    /api/messages/:user/:other
+  GET    /api/messages/list/:user
+  GET    /api/messages/unread/:user
 `);
+  });
+}
+
+startServer().catch((error) => {
+  console.error("❌ Failed to start server:", error);
+  process.exit(1);
 });
 
 module.exports = app;
