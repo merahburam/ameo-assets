@@ -466,7 +466,8 @@ app.post("/api/messages/send", async (req, res) => {
     res.json({ id: msgResult.rows[0].id, created_at: msgResult.rows[0].created_at });
   } catch (error) {
     console.error("❌ Send message error:", error.message);
-    res.status(500).json({ error: "Failed to send message" });
+    console.error("Full error:", error);
+    res.status(500).json({ error: "Failed to send message", details: error.message });
   }
 });
 
@@ -525,7 +526,8 @@ app.get("/api/messages/:user_cat_name/:other_cat_name", async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Get conversation error:", error.message);
-    res.status(500).json({ error: "Failed to get conversation" });
+    console.error("Full error:", error);
+    res.status(500).json({ error: "Failed to get conversation", details: error.message });
   }
 });
 
