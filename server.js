@@ -252,7 +252,10 @@ function generateSimpleFeedback(frameData) {
 
 async function initializeDatabase() {
   try {
+    console.log("🔄 Starting database initialization...");
+
     // Create users table
+    console.log("📝 Creating users table...");
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -260,8 +263,10 @@ async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    console.log("✅ Users table created/exists");
 
     // Create conversations table
+    console.log("📝 Creating conversations table...");
     await pool.query(`
       CREATE TABLE IF NOT EXISTS conversations (
         id SERIAL PRIMARY KEY,
@@ -271,8 +276,10 @@ async function initializeDatabase() {
         UNIQUE(LEAST(user1_id, user2_id), GREATEST(user1_id, user2_id))
       );
     `);
+    console.log("✅ Conversations table created/exists");
 
     // Create messages table
+    console.log("📝 Creating messages table...");
     await pool.query(`
       CREATE TABLE IF NOT EXISTS messages (
         id SERIAL PRIMARY KEY,
@@ -283,10 +290,12 @@ async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    console.log("✅ Messages table created/exists");
 
-    console.log("✅ Database tables initialized");
+    console.log("✅✅✅ Database tables fully initialized");
   } catch (error) {
     console.error("❌ Database initialization error:", error.message);
+    console.error("Full error:", error);
   }
 }
 
@@ -548,11 +557,15 @@ app.use((req, res) => {
 // ============================================
 
 async function startServer() {
+  console.log("🚀 Starting server...");
+  console.log("📦 DATABASE_URL:", process.env.DATABASE_URL ? "✅ SET" : "❌ NOT SET");
+
   // Initialize database if DATABASE_URL is configured
   if (process.env.DATABASE_URL) {
+    console.log("🔗 Attempting to connect to database...");
     await initializeDatabase();
   } else {
-    console.warn("⚠️  DATABASE_URL not set - messaging features will not work");
+    console.warn("❌ DATABASE_URL not set - messaging features will not work");
   }
 
   app.listen(PORT, () => {
