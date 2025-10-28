@@ -139,7 +139,32 @@ Has borders: ${frameData.strokes ? frameData.strokes.length > 0 : false}`;
     const isEmpty = !frameData.fills || frameData.fills.length === 0;
 
     if (frameData.svgBase64) {
-      prompt += `
+      // Check if it's a frame content descriptor or SVG
+      if (frameData.svgBase64.startsWith("FRAME_CONTENT:")) {
+        // Decode and use frame content description
+        try {
+          const decoded = Buffer.from(frameData.svgBase64, "base64").toString("utf-8");
+          const contentDesc = decoded.replace("FRAME_CONTENT:", "");
+          prompt += `
+
+FRAME STRUCTURE & CONTENT:
+${contentDesc}
+
+Analyze the frame content and structure above. Provide feedback on:
+1. Layout and organization of elements
+2. Content hierarchy and visual balance
+3. Spacing and alignment consistency
+4. Typography and text hierarchy (if applicable)
+5. Suggestions for improvement`;
+        } catch (e) {
+          // Fallback if decode fails
+          prompt += `
+
+Frame content description available. Analyzing...`;
+        }
+      } else {
+        // SVG format
+        prompt += `
 
 VISUAL DESIGN (SVG):
 data:image/svg+xml;base64,${frameData.svgBase64}
@@ -150,6 +175,7 @@ Analyze the SVG visual representation above and provide feedback on:
 3. Color usage and contrast (if applicable)
 4. Visual hierarchy and visual balance
 5. Any design inconsistencies or improvement opportunities`;
+      }
     } else if (isEmpty) {
       prompt += `
 
