@@ -128,33 +128,55 @@ async function generateDesignFeedback(frameData) {
   }
 
   try {
-    const prompt = `You are Ameo, a friendly UX/UI design expert cat. Analyze this Figma frame and provide detailed feedback on multiple aspects.
+    // Build prompt with SVG visual context if available
+    let prompt = `You are Ameo, a friendly UX/UI design expert cat. Analyze this Figma frame and provide detailed, specific feedback based on the visual design.
 
 Frame: ${frameData.name} (${frameData.width}x${frameData.height}px)
 Has colors: ${frameData.fills ? frameData.fills.length > 0 : false}
-Has borders: ${frameData.strokes ? frameData.strokes.length > 0 : false}
+Has borders: ${frameData.strokes ? frameData.strokes.length > 0 : false}`;
 
-Provide feedback as a JSON array with 3-4 specific comments about different aspects (layout, spacing, colors, typography, accessibility, etc). Each comment should be 1-2 sentences and friendly.
+    // Check if frame is empty
+    const isEmpty = !frameData.fills || frameData.fills.length === 0;
+
+    if (frameData.svgBase64) {
+      prompt += `
+
+VISUAL DESIGN (SVG):
+data:image/svg+xml;base64,${frameData.svgBase64}
+
+Analyze the SVG visual representation above and provide feedback on:
+1. Visual layout and composition
+2. Spacing and alignment
+3. Color usage and contrast (if applicable)
+4. Visual hierarchy and visual balance
+5. Any design inconsistencies or improvement opportunities`;
+    } else if (isEmpty) {
+      prompt += `
+
+NOTE: This frame appears to be empty or blank. Provide feedback on:
+1. Suggested purpose for this frame
+2. What type of content could work well here
+3. Recommended dimensions and structure
+4. Design considerations for this frame's intended use`;
+    } else {
+      prompt += `
+
+Analyze the frame based on metadata and provide feedback on design aspects.`;
+    }
+
+    prompt += `
+
+Provide feedback as a JSON array with 3-4 specific, actionable comments. Each comment should be 1-2 sentences and friendly.
 
 Respond with ONLY JSON array (no markdown, no extra text):
 [
   {
-    "feedback": "Comment about layout/spacing",
-    "category": "spacing"
-  },
-  {
-    "feedback": "Comment about colors/contrast",
-    "category": "color"
-  },
-  {
-    "feedback": "Comment about typography/readability",
-    "category": "typography"
-  },
-  {
-    "feedback": "Comment about accessibility",
-    "category": "accessibility"
+    "feedback": "Specific feedback about what you observe",
+    "category": "category_name"
   }
-]`;
+]
+
+Use these categories as appropriate: layout, spacing, color, typography, accessibility, general`;
 
     const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
