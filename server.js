@@ -162,8 +162,21 @@ Analyze the frame content and structure above. Provide feedback on:
 
 Frame content description available. Analyzing...`;
         }
+      } else if (frameData.svgBase64.startsWith("iVBORw0KGgo")) {
+        // PNG format (base64 PNG always starts with iVBORw0KGgo)
+        prompt += `
+
+VISUAL DESIGN (PNG Screenshot):
+data:image/png;base64,${frameData.svgBase64}
+
+Analyze the PNG screenshot of the frame above and provide detailed feedback on:
+1. Visual layout and composition of elements
+2. Spacing and alignment between elements
+3. Color usage, contrast, and visual hierarchy
+4. Typography and text readability
+5. Design quality and specific improvement opportunities`;
       } else {
-        // SVG format
+        // SVG or other format
         prompt += `
 
 VISUAL DESIGN (SVG):
