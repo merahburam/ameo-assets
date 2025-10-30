@@ -2,12 +2,13 @@
  * Ameo Unified Server
  * Serves:
  * 1. Static assets (sprites)
- * 2. AI feedback via DeepSeek API
- * 3. Messaging system via PostgreSQL
+ * 2. AI feedback via OpenAI GPT-4o API
+ * 3. Daily speech generation via OpenAI GPT-4o
+ * 4. Messaging system via PostgreSQL
  *
  * Deploy to Railway:
- * 1. Set DEEPSEEK_API_KEY environment variable
- * 2. Set DATABASE_URL for PostgreSQL
+ * 1. Set OPENAI_API_KEY environment variable
+ * 2. Set DATABASE_URL for PostgreSQL (optional, for messaging)
  * 3. Run: npm install express cors dotenv pg
  * 4. Run: node server.js
  */
@@ -323,14 +324,14 @@ app.post("/api/feedback", async (req, res) => {
 });
 
 // ============================================
-// AI Feedback Implementation (DeepSeek)
+// AI Feedback Implementation (OpenAI GPT-4o)
 // ============================================
 
 async function generateDesignFeedback(frameData) {
-  const deepseekApiKey = process.env.DEEPSEEK_API_KEY;
+  const openaiApiKey = process.env.OPENAI_API_KEY;
 
-  if (!deepseekApiKey) {
-    console.warn("DeepSeek API key not configured, using simple feedback");
+  if (!openaiApiKey) {
+    console.warn("OpenAI API key not configured, using simple feedback");
     return generateSimpleFeedback(frameData);
   }
 
@@ -424,14 +425,14 @@ Respond with ONLY JSON array (no markdown, no extra text):
 
 Use these categories as appropriate: layout, spacing, color, typography, accessibility, general`;
 
-    const response = await fetch("https://api.deepseek.com/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${deepseekApiKey}`,
+        Authorization: `Bearer ${openaiApiKey}`,
       },
       body: JSON.stringify({
-        model: "deepseek-chat",
+        model: "gpt-4o",
         messages: [
           {
             role: "user",
@@ -445,17 +446,17 @@ Use these categories as appropriate: layout, spacing, color, typography, accessi
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error(`DeepSeek API error (${response.status}):`, errorData);
-      throw new Error(`DeepSeek API error: ${response.statusText} - ${JSON.stringify(errorData)}`);
+      console.error(`OpenAI API error (${response.status}):`, errorData);
+      throw new Error(`OpenAI API error: ${response.statusText} - ${JSON.stringify(errorData)}`);
     }
 
     const data = await response.json();
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      console.error("Invalid DeepSeek response structure:", data);
-      throw new Error("Invalid response from DeepSeek API");
+      console.error("Invalid OpenAI response structure:", data);
+      throw new Error("Invalid response from OpenAI API");
     }
     const content = data.choices[0].message.content;
-    console.log(`DeepSeek response (${content.length} chars)`);
+    console.log(`OpenAI response (${content.length} chars)`);
 
     // Try to parse as array (multiple feedback points)
     const arrayMatch = content.match(/\[[\s\S]*\]/);
@@ -489,7 +490,7 @@ Use these categories as appropriate: layout, spacing, color, typography, accessi
       confidence: 0.75,
     }];
   } catch (error) {
-    console.error("DeepSeek error:", error.message);
+    console.error("OpenAI error:", error.message);
     return generateSimpleFeedback(frameData);
   }
 }
