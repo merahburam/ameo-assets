@@ -360,12 +360,6 @@ Has borders: ${frameData.strokes ? frameData.strokes.length > 0 : false}`;
     let hasImage = false;
 
     if (frameData.svgBase64) {
-      // Debug: show what we're checking
-      const first20 = frameData.svgBase64.substring(0, 20);
-      console.log(`🔍 svgBase64 starts with: "${first20}..."`);
-      console.log(`   Is FRAME_CONTENT: ${frameData.svgBase64.startsWith("FRAME_CONTENT:")}`);
-      console.log(`   Is PNG (iVBORw0KGgo): ${frameData.svgBase64.startsWith("iVBORw0KGgo")}`);
-
       // Check if it's a frame content descriptor or PNG/SVG
       if (frameData.svgBase64.startsWith("FRAME_CONTENT:")) {
         // Decode and use frame content description
@@ -444,12 +438,18 @@ Analyze the frame based on metadata and provide feedback on design aspects.`;
 
     textContent += `
 
-Provide feedback as a JSON array with 3-4 specific, actionable comments. Each comment should be 1-2 sentences and friendly.
+Provide feedback as a JSON array with 3-4 specific, actionable comments.
+
+IMPORTANT FORMATTING RULES:
+- Each feedback point should be 1-2 sentences, friendly, and plain text
+- DO NOT use markdown formatting like # * ** __ or bold/italic
+- You CAN use simple dashes (-) for bullet lists if helpful
+- Keep it simple and easy to read
 
 Respond with ONLY JSON array (no markdown, no extra text):
 [
   {
-    "feedback": "Specific feedback about what you observe",
+    "feedback": "Plain text feedback without any markdown symbols",
     "category": "category_name"
   }
 ]
