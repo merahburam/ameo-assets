@@ -459,23 +459,35 @@ Analyze the frame based on metadata and provide feedback on design aspects.`;
 
     textContent += `
 
-Provide feedback as a JSON array with 3-4 specific, actionable comments.
+CRITICAL: Provide feedback as a JSON array with 3-4 specific, actionable comments.
 
-IMPORTANT FORMATTING RULES:
-- Each feedback point should be 1-2 sentences, friendly, and plain text
-- DO NOT use markdown formatting like # * ** __ or bold/italic
-- You CAN use simple dashes (-) for bullet lists if helpful
-- Keep it simple and easy to read
+ABSOLUTELY NO MARKDOWN:
+- NEVER use # or ### for headers
+- NEVER use ** or * for bold or italic
+- NEVER use __ or _ for styling
+- NEVER use any special formatting symbols
+- Write ONLY plain English text with NO symbols whatsoever
 
-Respond with ONLY JSON array (no markdown, no extra text):
+FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
 [
   {
-    "feedback": "Plain text feedback without any markdown symbols",
-    "category": "category_name"
+    "feedback": "First point here without any symbols or formatting",
+    "category": "layout"
+  },
+  {
+    "feedback": "Second point here without any symbols or formatting",
+    "category": "spacing"
   }
 ]
 
-Use these categories as appropriate: layout, spacing, color, typography, accessibility, general`;
+EXAMPLES OF CORRECT FEEDBACK (plain text only):
+- Correct: "The layout is clean and organized with good spacing"
+- Correct: "The sidebar navigation could be more intuitive"
+- WRONG: "**Bold text**"
+- WRONG: "### Heading"
+- WRONG: "- Bullet point with **bold**"
+
+Use these categories: layout, spacing, color, typography, accessibility, general`;
 
     // If no image was added, use text content directly
     if (!hasImage) {
