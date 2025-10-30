@@ -622,11 +622,15 @@ Use these categories: layout, spacing, color, typography, accessibility, general
     }
 
     // If no JSON found, try to parse as numbered list format
+    console.log("🔍 Attempting to parse as numbered list format");
     const parsedList = parseNumberedListFormat(content);
+    console.log(`📋 Parsed ${parsedList.length} items from numbered list`);
     if (parsedList.length > 0) {
       return parsedList;
     }
 
+    console.log("⚠️ Could not parse response, returning raw content");
+    console.log("Raw content sample:", content.substring(0, 200));
     // Last resort: return raw content (fallback for unexpected formats)
     return [{
       feedback: cleanMarkdownFromFeedback(content),
