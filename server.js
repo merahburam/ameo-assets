@@ -333,6 +333,23 @@ app.post("/api/feedback", async (req, res) => {
 });
 
 // ============================================
+// Helper: Clean markdown from feedback
+// ============================================
+
+function cleanMarkdownFromFeedback(text) {
+  if (!text) return text;
+
+  // Remove markdown symbols while keeping dashes for bullets
+  return text
+    .replace(/^#+\s+/gm, "") // Remove headings (### 1. -> 1.)
+    .replace(/\*\*([^*]+)\*\*/g, "$1") // Remove bold (**text** -> text)
+    .replace(/\*([^*]+)\*/g, "$1") // Remove italic (*text* -> text)
+    .replace(/__([^_]+)__/g, "$1") // Remove bold (__text__ -> text)
+    .replace(/_([^_]+)_/g, "$1") // Remove italic (_text_ -> text)
+    .trim();
+}
+
+// ============================================
 // AI Feedback Implementation (OpenAI GPT-4o)
 // ============================================
 
@@ -512,9 +529,9 @@ Use these categories as appropriate: layout, spacing, color, typography, accessi
     if (arrayMatch) {
       const parsed = JSON.parse(arrayMatch[0]);
       if (Array.isArray(parsed)) {
-        // Return array of feedback items
+        // Return array of feedback items with cleaned markdown
         return parsed.map((item) => ({
-          feedback: item.feedback || "Nice design!",
+          feedback: cleanMarkdownFromFeedback(item.feedback) || "Nice design!",
           category: item.category || "general",
           confidence: item.confidence || 0.8,
         }));
@@ -526,7 +543,7 @@ Use these categories as appropriate: layout, spacing, color, typography, accessi
     if (objMatch) {
       const parsed = JSON.parse(objMatch[0]);
       return [{
-        feedback: parsed.feedback || "Nice design!",
+        feedback: cleanMarkdownFromFeedback(parsed.feedback) || "Nice design!",
         category: parsed.category || "general",
         confidence: parsed.confidence || 0.8,
       }];
