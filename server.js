@@ -341,11 +341,15 @@ function cleanMarkdownFromFeedback(text) {
 
   // Remove markdown symbols while keeping dashes for bullets
   return text
-    .replace(/^#+\s+/gm, "") // Remove headings (### 1. -> 1.)
-    .replace(/\*\*([^*]*)\*\*/g, "$1") // Remove bold (**text** -> text) - handles any character except *
-    .replace(/\*([^*]*)\*/g, "$1") // Remove italic (*text* -> text) - handles any character except *
-    .replace(/__([^_]*)__/g, "$1") // Remove bold (__text__ -> text) - handles any character except _
-    .replace(/_([^_]*)_/g, "$1") // Remove italic (_text_ -> text) - handles any character except _
+    .replace(/^#+\s+/gm, "") // Remove headings at line start (### -> )
+    .replace(/\*\*([^*]+)\*\*/g, "$1") // Remove bold (**text** -> text)
+    .replace(/\*\*(.+?)\*\*/g, "$1") // Remove bold with newlines (**text\nmore** -> text\nmore)
+    .replace(/\*([^*]+)\*/g, "$1") // Remove italic (*text* -> text)
+    .replace(/\*(.+?)\*/g, "$1") // Remove italic with newlines (*text\nmore* -> text\nmore)
+    .replace(/__([^_]+)__/g, "$1") // Remove bold (__text__ -> text)
+    .replace(/__(.+?)__/g, "$1") // Remove bold with newlines
+    .replace(/_([^_]+)_/g, "$1") // Remove italic (_text_ -> text)
+    .replace(/_(.+?)_/g, "$1") // Remove italic with newlines
     .trim();
 }
 
