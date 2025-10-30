@@ -354,6 +354,7 @@ Has borders: ${frameData.strokes ? frameData.strokes.length > 0 : false}`;
       // Check if it's a frame content descriptor or PNG/SVG
       if (frameData.svgBase64.startsWith("FRAME_CONTENT:")) {
         // Decode and use frame content description
+        console.log(`📝 Frame has content description (${frameData.svgBase64.length} chars)`);
         try {
           const decoded = Buffer.from(frameData.svgBase64, "base64").toString("utf-8");
           const contentDesc = decoded.replace("FRAME_CONTENT:", "");
@@ -376,6 +377,7 @@ Frame content description available. Analyzing...`;
       } else if (frameData.svgBase64.startsWith("iVBORw0KGgo")) {
         // PNG format (base64 PNG always starts with iVBORw0KGgo)
         // Use GPT-4o vision API with image_url content
+        console.log(`🖼️ Frame has PNG image (${frameData.svgBase64.length} chars base64) - will send to GPT-4o vision API`);
         textContent += `
 
 Analyze the PNG screenshot of the frame above and provide detailed feedback on:
@@ -446,6 +448,16 @@ Use these categories as appropriate: layout, spacing, color, typography, accessi
         text: textContent
       });
     }
+
+    // Log what we're sending to OpenAI
+    console.log(`📤 Sending to OpenAI: ${messageContent.length} content items (${hasImage ? 'with PNG' : 'text only'})`);
+    messageContent.forEach((item, idx) => {
+      if (item.type === 'text') {
+        console.log(`   [${idx}] TEXT (${item.text.length} chars)`);
+      } else if (item.type === 'image_url') {
+        console.log(`   [${idx}] IMAGE_URL (data:image/png;base64,${item.image_url.url.substring(0, 50)}...)`);
+      }
+    });
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
