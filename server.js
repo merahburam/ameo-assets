@@ -339,17 +339,25 @@ app.post("/api/feedback", async (req, res) => {
 function cleanMarkdownFromFeedback(text) {
   if (!text) return text;
 
-  // Remove markdown symbols while keeping dashes for bullets
   return text
-    .replace(/^#+\s+/gm, "") // Remove headings at line start (### -> )
-    .replace(/\*\*([^*]+)\*\*/g, "$1") // Remove bold (**text** -> text)
-    .replace(/\*\*(.+?)\*\*/g, "$1") // Remove bold with newlines (**text\nmore** -> text\nmore)
-    .replace(/\*([^*]+)\*/g, "$1") // Remove italic (*text* -> text)
-    .replace(/\*(.+?)\*/g, "$1") // Remove italic with newlines (*text\nmore* -> text\nmore)
-    .replace(/__([^_]+)__/g, "$1") // Remove bold (__text__ -> text)
-    .replace(/__(.+?)__/g, "$1") // Remove bold with newlines
-    .replace(/_([^_]+)_/g, "$1") // Remove italic (_text_ -> text)
-    .replace(/_(.+?)_/g, "$1") // Remove italic with newlines
+    // Remove markdown headings (###, ##, #) anywhere
+    .replace(/#+\s*/g, "")
+    // Remove bold with ** (even across newlines)
+    .replace(/\*\*[\s\S]*?\*\*/g, (match) => match.replace(/\*\*/g, ""))
+    // Remove bold with __ (even across newlines)
+    .replace(/__[\s\S]*?__/g, (match) => match.replace(/__/g, ""))
+    // Remove single italics with * (be careful to not break things)
+    .replace(/\*(?!\*)([\s\S]*?)(?<!\*)\*/g, "$1")
+    // Remove single italics with _ (be careful to not break things)
+    .replace(/_(?!_)([\s\S]*?)(?<!_)_/g, "$1")
+    // Remove markdown list markers (-, +, *)
+    .replace(/^[\s]*[-+*]\s+/gm, "")
+    // Remove markdown code blocks
+    .replace(/```[\s\S]*?```/g, "")
+    // Remove inline code
+    .replace(/`([^`]+)`/g, "$1")
+    // Clean up excessive newlines
+    .replace(/\n\n+/g, "\n")
     .trim();
 }
 
