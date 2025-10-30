@@ -287,6 +287,10 @@ app.post("/api/feedback", async (req, res) => {
     }
 
     console.log(`Processing feedback for ${frames.length} frame(s)`);
+    // Log what we received from the plugin
+    frames.forEach((frame, idx) => {
+      console.log(`   [${idx}] ${frame.frameData.name} - ${frame.svgBase64 ? `PNG (${frame.svgBase64.length} chars)` : 'No PNG'}`);
+    });
 
     const feedbackList = [];
     for (const frame of frames) {
