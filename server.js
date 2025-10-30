@@ -355,6 +355,12 @@ Has borders: ${frameData.strokes ? frameData.strokes.length > 0 : false}`;
     let hasImage = false;
 
     if (frameData.svgBase64) {
+      // Debug: show what we're checking
+      const first20 = frameData.svgBase64.substring(0, 20);
+      console.log(`🔍 svgBase64 starts with: "${first20}..."`);
+      console.log(`   Is FRAME_CONTENT: ${frameData.svgBase64.startsWith("FRAME_CONTENT:")}`);
+      console.log(`   Is PNG (iVBORw0KGgo): ${frameData.svgBase64.startsWith("iVBORw0KGgo")}`);
+
       // Check if it's a frame content descriptor or PNG/SVG
       if (frameData.svgBase64.startsWith("FRAME_CONTENT:")) {
         // Decode and use frame content description
