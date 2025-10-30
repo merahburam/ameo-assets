@@ -336,8 +336,8 @@ async function generateDesignFeedback(frameData) {
   }
 
   try {
-    // Build prompt with SVG visual context if available
-    let prompt = `You are Ameo, a friendly UX/UI design expert cat. Analyze this Figma frame and provide detailed, specific feedback based on the visual design.
+    // Build base prompt
+    let textContent = `You are Ameo, a friendly UX/UI design expert cat. Analyze this Figma frame and provide detailed, specific feedback based on the visual design.
 
 Frame: ${frameData.name} (${frameData.width}x${frameData.height}px)
 Has colors: ${frameData.fills ? frameData.fills.length > 0 : false}
@@ -346,14 +346,18 @@ Has borders: ${frameData.strokes ? frameData.strokes.length > 0 : false}`;
     // Check if frame is empty
     const isEmpty = !frameData.fills || frameData.fills.length === 0;
 
+    // Build message content array (for GPT-4o vision)
+    const messageContent = [];
+    let hasImage = false;
+
     if (frameData.svgBase64) {
-      // Check if it's a frame content descriptor or SVG
+      // Check if it's a frame content descriptor or PNG/SVG
       if (frameData.svgBase64.startsWith("FRAME_CONTENT:")) {
         // Decode and use frame content description
         try {
           const decoded = Buffer.from(frameData.svgBase64, "base64").toString("utf-8");
           const contentDesc = decoded.replace("FRAME_CONTENT:", "");
-          prompt += `
+          textContent += `
 
 FRAME STRUCTURE & CONTENT:
 ${contentDesc}
@@ -365,17 +369,14 @@ Analyze the frame content and structure above. Provide feedback on:
 4. Typography and text hierarchy (if applicable)
 5. Suggestions for improvement`;
         } catch (e) {
-          // Fallback if decode fails
-          prompt += `
+          textContent += `
 
 Frame content description available. Analyzing...`;
         }
       } else if (frameData.svgBase64.startsWith("iVBORw0KGgo")) {
         // PNG format (base64 PNG always starts with iVBORw0KGgo)
-        prompt += `
-
-VISUAL DESIGN (PNG Screenshot):
-data:image/png;base64,${frameData.svgBase64}
+        // Use GPT-4o vision API with image_url content
+        textContent += `
 
 Analyze the PNG screenshot of the frame above and provide detailed feedback on:
 1. Visual layout and composition of elements
@@ -383,9 +384,22 @@ Analyze the PNG screenshot of the frame above and provide detailed feedback on:
 3. Color usage, contrast, and visual hierarchy
 4. Typography and text readability
 5. Design quality and specific improvement opportunities`;
+
+        // Add image to content array for vision API
+        messageContent.push({
+          type: "text",
+          text: textContent
+        });
+        messageContent.push({
+          type: "image_url",
+          image_url: {
+            url: `data:image/png;base64,${frameData.svgBase64}`
+          }
+        });
+        hasImage = true;
       } else {
         // SVG or other format
-        prompt += `
+        textContent += `
 
 VISUAL DESIGN (SVG):
 data:image/svg+xml;base64,${frameData.svgBase64}
@@ -398,7 +412,7 @@ Analyze the SVG visual representation above and provide feedback on:
 5. Any design inconsistencies or improvement opportunities`;
       }
     } else if (isEmpty) {
-      prompt += `
+      textContent += `
 
 NOTE: This frame appears to be empty or blank. Provide feedback on:
 1. Suggested purpose for this frame
@@ -406,12 +420,12 @@ NOTE: This frame appears to be empty or blank. Provide feedback on:
 3. Recommended dimensions and structure
 4. Design considerations for this frame's intended use`;
     } else {
-      prompt += `
+      textContent += `
 
 Analyze the frame based on metadata and provide feedback on design aspects.`;
     }
 
-    prompt += `
+    textContent += `
 
 Provide feedback as a JSON array with 3-4 specific, actionable comments. Each comment should be 1-2 sentences and friendly.
 
@@ -425,6 +439,14 @@ Respond with ONLY JSON array (no markdown, no extra text):
 
 Use these categories as appropriate: layout, spacing, color, typography, accessibility, general`;
 
+    // If no image was added, use text content directly
+    if (!hasImage) {
+      messageContent.push({
+        type: "text",
+        text: textContent
+      });
+    }
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -436,7 +458,7 @@ Use these categories as appropriate: layout, spacing, color, typography, accessi
         messages: [
           {
             role: "user",
-            content: prompt,
+            content: messageContent,
           },
         ],
         temperature: 0.7,
