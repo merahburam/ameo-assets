@@ -337,7 +337,7 @@ async function generateDesignFeedback(frameData) {
 
   try {
     // Build base prompt
-    let textContent = `You are Ameo, a friendly UX/UI design expert cat. Analyze this Figma frame and provide detailed, specific feedback based on the visual design.
+    let textContent = `You are Ameo, a friendly UX/UI design expert cat. Analyze this Figma frame and provide detailed, specific feedback.
 
 Frame: ${frameData.name} (${frameData.width}x${frameData.height}px)
 Has colors: ${frameData.fills ? frameData.fills.length > 0 : false}
