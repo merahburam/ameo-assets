@@ -295,7 +295,12 @@ app.post("/api/feedback", async (req, res) => {
     const feedbackList = [];
     for (const frame of frames) {
       try {
-        const feedbackArray = await generateDesignFeedback(frame.frameData);
+        // Pass the PNG along with frameData (PNG is at frame.svgBase64, not frame.frameData.svgBase64)
+        const frameDataWithPNG = {
+          ...frame.frameData,
+          svgBase64: frame.svgBase64 // Include PNG if it exists
+        };
+        const feedbackArray = await generateDesignFeedback(frameDataWithPNG);
         // feedbackArray is now an array of feedback items
         feedbackArray.forEach((feedback) => {
           feedbackList.push({
