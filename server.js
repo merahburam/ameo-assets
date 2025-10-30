@@ -360,6 +360,7 @@ function cleanMarkdownFromFeedback(text) {
 /**
  * Parse plain text numbered list format from GPT and convert to feedback array
  * Format: "1. **Title:** - bullet\n   - bullet\n\n2. **Title:** - bullet"
+ * Creates one feedback item per bullet point (not per numbered section)
  */
 function parseNumberedListFormat(text) {
   if (!text) return [];
@@ -373,6 +374,7 @@ function parseNumberedListFormat(text) {
     // Extract title from "1. **Title:** or similar"
     const titleMatch = section.match(/^\d+\.\s+\*\*([^*]+)\*\*:|^\d+\.\s+([^:]+):/);
     let title = titleMatch ? (titleMatch[1] || titleMatch[2]) : "";
+    title = cleanMarkdownFromFeedback(title);
 
     // Get the rest of the content (bullets)
     const contentLines = section.split('\n').slice(1); // Skip first line (title)
@@ -383,15 +385,21 @@ function parseNumberedListFormat(text) {
       .map(bullet => cleanMarkdownFromFeedback(bullet))
       .filter(bullet => bullet);
 
-    // Combine title and bullets into feedback
-    let feedback = cleanMarkdownFromFeedback(title);
+    // Create ONE feedback item per bullet point
     if (bullets.length > 0) {
-      feedback += (feedback ? ': ' : '') + bullets.join(' ');
-    }
-
-    if (feedback) {
+      bullets.forEach(bullet => {
+        // Prefix with title if this is first bullet
+        const feedback = bullets[0] === bullet && title ? `${title}: ${bullet}` : bullet;
+        items.push({
+          feedback: feedback,
+          category: 'general',
+          confidence: 0.8
+        });
+      });
+    } else if (title) {
+      // If no bullets, just add the title as feedback
       items.push({
-        feedback: feedback,
+        feedback: title,
         category: 'general',
         confidence: 0.8
       });
