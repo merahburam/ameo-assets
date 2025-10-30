@@ -340,18 +340,14 @@ function cleanMarkdownFromFeedback(text) {
   if (!text) return text;
 
   return text
-    // Remove markdown headings (###, ##, #) anywhere
-    .replace(/#+\s*/g, "")
-    // Remove bold with ** (even across newlines)
-    .replace(/\*\*[\s\S]*?\*\*/g, (match) => match.replace(/\*\*/g, ""))
-    // Remove bold with __ (even across newlines)
-    .replace(/__[\s\S]*?__/g, (match) => match.replace(/__/g, ""))
-    // Remove single italics with * (be careful to not break things)
-    .replace(/\*(?!\*)([\s\S]*?)(?<!\*)\*/g, "$1")
-    // Remove single italics with _ (be careful to not break things)
-    .replace(/_(?!_)([\s\S]*?)(?<!_)_/g, "$1")
-    // Remove markdown list markers (-, +, *)
-    .replace(/^[\s]*[-+*]\s+/gm, "")
+    // Remove bold with ** (extract text between **)
+    .replace(/\*\*([^*]*)\*\*/g, "$1")
+    // Remove bold with __ (extract text between __)
+    .replace(/__([^_]*)__/g, "$1")
+    // Remove single italics with *
+    .replace(/\*([^*]*)\*/g, "$1")
+    // Remove single italics with _
+    .replace(/_([^_]*)_/g, "$1")
     // Remove markdown code blocks
     .replace(/```[\s\S]*?```/g, "")
     // Remove inline code
@@ -359,6 +355,50 @@ function cleanMarkdownFromFeedback(text) {
     // Clean up excessive newlines
     .replace(/\n\n+/g, "\n")
     .trim();
+}
+
+/**
+ * Parse plain text numbered list format from GPT and convert to feedback array
+ * Format: "1. **Title:** - bullet\n   - bullet\n\n2. **Title:** - bullet"
+ */
+function parseNumberedListFormat(text) {
+  if (!text) return [];
+
+  const items = [];
+
+  // Split by numbered items (1., 2., 3., etc.)
+  const sections = text.split(/\n(?=\d+\.\s)/);
+
+  sections.forEach((section) => {
+    // Extract title from "1. **Title:** or similar"
+    const titleMatch = section.match(/^\d+\.\s+\*\*([^*]+)\*\*:|^\d+\.\s+([^:]+):/);
+    let title = titleMatch ? (titleMatch[1] || titleMatch[2]) : "";
+
+    // Get the rest of the content (bullets)
+    const contentLines = section.split('\n').slice(1); // Skip first line (title)
+    const bullets = contentLines
+      .map(line => line.trim())
+      .filter(line => line && line.startsWith('-'))
+      .map(line => line.replace(/^-\s+/, '').trim())
+      .map(bullet => cleanMarkdownFromFeedback(bullet))
+      .filter(bullet => bullet);
+
+    // Combine title and bullets into feedback
+    let feedback = cleanMarkdownFromFeedback(title);
+    if (bullets.length > 0) {
+      feedback += (feedback ? ': ' : '') + bullets.join(' ');
+    }
+
+    if (feedback) {
+      items.push({
+        feedback: feedback,
+        category: 'general',
+        confidence: 0.8
+      });
+    }
+  });
+
+  return items.length > 0 ? items : [];
 }
 
 // ============================================
@@ -573,9 +613,15 @@ Use these categories: layout, spacing, color, typography, accessibility, general
       }];
     }
 
-    // If no JSON found, return single generic feedback
+    // If no JSON found, try to parse as numbered list format
+    const parsedList = parseNumberedListFormat(content);
+    if (parsedList.length > 0) {
+      return parsedList;
+    }
+
+    // Last resort: return raw content (fallback for unexpected formats)
     return [{
-      feedback: content,
+      feedback: cleanMarkdownFromFeedback(content),
       category: "general",
       confidence: 0.75,
     }];
