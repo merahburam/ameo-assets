@@ -555,13 +555,6 @@ Use these categories: layout, spacing, color, typography, accessibility, general
 
     // Log what we're sending to OpenAI
     console.log(`📤 Sending to OpenAI: ${messageContent.length} content items (${hasImage ? 'with PNG' : 'text only'})`);
-    messageContent.forEach((item, idx) => {
-      if (item.type === 'text') {
-        console.log(`   [${idx}] TEXT (${item.text.length} chars)`);
-      } else if (item.type === 'image_url') {
-        console.log(`   [${idx}] IMAGE_URL (data:image/png;base64,${item.image_url.url.substring(0, 50)}...)`);
-      }
-    });
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -594,7 +587,6 @@ Use these categories: layout, spacing, color, typography, accessibility, general
       throw new Error("Invalid response from OpenAI API");
     }
     const content = data.choices[0].message.content;
-    console.log(`OpenAI response (${content.length} chars)`);
 
     // Try to parse as array (multiple feedback points)
     const arrayMatch = content.match(/\[[\s\S]*\]/);
@@ -622,15 +614,11 @@ Use these categories: layout, spacing, color, typography, accessibility, general
     }
 
     // If no JSON found, try to parse as numbered list format
-    console.log("🔍 Attempting to parse as numbered list format");
     const parsedList = parseNumberedListFormat(content);
-    console.log(`📋 Parsed ${parsedList.length} items from numbered list`);
     if (parsedList.length > 0) {
       return parsedList;
     }
 
-    console.log("⚠️ Could not parse response, returning raw content");
-    console.log("Raw content sample:", content.substring(0, 200));
     // Last resort: return raw content (fallback for unexpected formats)
     return [{
       feedback: cleanMarkdownFromFeedback(content),
