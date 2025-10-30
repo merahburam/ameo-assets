@@ -21,6 +21,10 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Daily speeches cache
+let cachedSpeeches = null;
+let cachedDate = "";
+
 // Database connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -31,6 +35,52 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.static(path.join(__dirname)));
+
+// ============================================
+// Speech Generation Configuration
+// ============================================
+
+const SPEECH_CATEGORIES = {
+  general_tech_roasts: "General Tech Roasts",
+  ai_news: "AI News",
+  figma: "Figma",
+  science: "Science",
+  games: "Games",
+  design_tools: "Design Tools"
+};
+
+const FALLBACK_SPEECHES = {
+  general_tech_roasts: [
+    "You call *that* code?",
+    "Have you tried Stack Overflow?",
+    "That's why we have code review.",
+  ],
+  ai_news: [
+    "AI is coming for your job.",
+    "Another AI startup. Groundbreaking.",
+    "ChatGPT wrote this better.",
+  ],
+  figma: [
+    "Your design system needs a design system.",
+    "Figma crashed again? Classic.",
+    "That component library is... something.",
+  ],
+  science: [
+    "According to science, you should sleep.",
+    "Physics disagrees with your approach.",
+    "The laws of thermodynamics called.",
+  ],
+  games: [
+    "Speedrun through the tutorial? Bold.",
+    "That's a skill issue.",
+    "Press F to respect.",
+  ],
+  design_tools: [
+    "Another design tool emerges.",
+    "Better tools won't fix bad design.",
+    "Your design needs work, not tools.",
+  ]
+};
 
 // ============================================
 // Health Check
@@ -63,6 +113,163 @@ app.get("/", (req, res) => {
     res.status(500).json({ error: "Failed to list assets" });
   }
 });
+
+// ============================================
+// Daily Speech Generation API (GPT-4o)
+// ============================================
+
+app.get("/api/speech/daily", async (req, res) => {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+
+    // Return cached if same day
+    if (cachedDate === today && cachedSpeeches) {
+      console.log(`📦 Returning cached speeches for ${today}`);
+      return res.json({
+        date: today,
+        categories: cachedSpeeches,
+        cached: true,
+        lastFetched: Date.now()
+      });
+    }
+
+    // Generate new speeches if different day
+    console.log(`✨ Generating new speeches for ${today}`);
+    const speeches = await generateDailySpeeches();
+
+    // Update cache
+    cachedSpeeches = speeches;
+    cachedDate = today;
+
+    res.json({
+      date: today,
+      categories: speeches,
+      cached: false,
+      lastFetched: Date.now()
+    });
+
+  } catch (error) {
+    console.error("Error in /api/speech/daily:", error.message);
+    res.status(500).json({
+      error: "Failed to generate speeches",
+      message: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
+  }
+});
+
+// ============================================
+// Generate Daily Speeches (GPT-4o)
+// ============================================
+
+async function generateDailySpeeches() {
+  const openaiApiKey = process.env.OPENAI_API_KEY;
+
+  if (!openaiApiKey) {
+    console.warn("⚠️ OPENAI_API_KEY not set, using fallback speeches");
+    return FALLBACK_SPEECHES;
+  }
+
+  try {
+    const prompt = generateSpeechPrompt();
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${openaiApiKey}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.9,
+        max_tokens: 2000
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error(`OpenAI API error (${response.status}):`, errorData);
+      throw new Error(`OpenAI API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+
+    if (!content) {
+      throw new Error("Empty response from OpenAI");
+    }
+
+    // Parse JSON response
+    const aiSpeeches = JSON.parse(content);
+
+    // Validate and combine with fallback
+    return validateAndCombineSpeeches(aiSpeeches);
+
+  } catch (error) {
+    console.error("❌ Failed to generate speeches with GPT-4o:", error.message);
+    console.log("🔄 Falling back to hardcoded speeches");
+    return FALLBACK_SPEECHES;
+  }
+}
+
+function generateSpeechPrompt() {
+  const categoriesDescription = Object.entries(SPEECH_CATEGORIES)
+    .map(([key, value]) => `- ${value} (${key})`)
+    .join("\n");
+
+  return `You are a sarcastic design assistant cat. Generate exactly 4 NEW witty speech bubbles for EACH category below.
+
+Each speech bubble should:
+- Be max 130 characters
+- Be funny, sarcastic, or clever
+- Be unique (don't repeat common jokes)
+- Match the category theme
+- Reference the topic naturally
+
+Categories:
+${categoriesDescription}
+
+Today's context: These speeches should reference current trends and general knowledge about these topics.
+
+Return ONLY valid JSON (no markdown, no explanation, no code blocks):
+{
+  "general_tech_roasts": ["speech1", "speech2", "speech3", "speech4"],
+  "ai_news": ["speech1", "speech2", "speech3", "speech4"],
+  "figma": ["speech1", "speech2", "speech3", "speech4"],
+  "science": ["speech1", "speech2", "speech3", "speech4"],
+  "games": ["speech1", "speech2", "speech3", "speech4"],
+  "design_tools": ["speech1", "speech2", "speech3", "speech4"]
+}`;
+}
+
+function validateAndCombineSpeeches(aiSpeeches) {
+  const combined = {};
+
+  for (const [category, fallback] of Object.entries(FALLBACK_SPEECHES)) {
+    const aiList = aiSpeeches[category] || [];
+
+    // Validate AI speeches
+    const validAiSpeeches = aiList.filter(
+      (s) => typeof s === "string" && s.length > 0 && s.length <= 130
+    );
+
+    // Combine: fallback (1-2) + AI (up to 4) = max 5 per category
+    const all = [...(fallback || []), ...validAiSpeeches];
+    combined[category] = all.slice(0, 5);
+
+    // Log if we had to use fallback
+    if (validAiSpeeches.length < 4) {
+      console.warn(`⚠️ Category "${category}" only got ${validAiSpeeches.length} valid AI speeches, using fallback`);
+    }
+  }
+
+  return combined;
+}
 
 // ============================================
 // AI Feedback API (DeepSeek)
@@ -603,7 +810,7 @@ app.use((req, res) => {
   res.status(404).json({
     error: "Not found",
     path: req.path,
-    available: ["/health", "/", "POST /api/feedback", "POST /api/messages/register", "GET /api/messages/list/:cat_name"],
+    available: ["/health", "/", "GET /api/speech/daily", "POST /api/feedback", "POST /api/messages/register", "GET /api/messages/list/:cat_name"],
   });
 });
 
