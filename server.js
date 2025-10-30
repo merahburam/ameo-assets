@@ -342,10 +342,10 @@ function cleanMarkdownFromFeedback(text) {
   // Remove markdown symbols while keeping dashes for bullets
   return text
     .replace(/^#+\s+/gm, "") // Remove headings (### 1. -> 1.)
-    .replace(/\*\*([^*]+)\*\*/g, "$1") // Remove bold (**text** -> text)
-    .replace(/\*([^*]+)\*/g, "$1") // Remove italic (*text* -> text)
-    .replace(/__([^_]+)__/g, "$1") // Remove bold (__text__ -> text)
-    .replace(/_([^_]+)_/g, "$1") // Remove italic (_text_ -> text)
+    .replace(/\*\*(.+?)\*\*/g, "$1") // Remove bold (**text** -> text) - greedy
+    .replace(/\*(.+?)\*/g, "$1") // Remove italic (*text* -> text) - greedy
+    .replace(/__(.+?)__/g, "$1") // Remove bold (__text__ -> text) - greedy
+    .replace(/_(.+?)_/g, "$1") // Remove italic (_text_ -> text) - greedy
     .trim();
 }
 
