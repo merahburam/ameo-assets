@@ -1003,13 +1003,16 @@ app.post("/api/messages/send", async (req, res) => {
 
     let conversationId;
     if (convResult.rows.length === 0) {
+      console.log(`📭 No existing conversation found between ${sender_cat_name} (${senderId}) and ${recipient_cat_name} (${recipientId}), creating new one`);
       convResult = await pool.query(
         "INSERT INTO conversations (user1_id, user2_id) VALUES ($1, $2) RETURNING id",
         [senderId, recipientId]
       );
       conversationId = convResult.rows[0].id;
+      console.log(`✅ Created new conversation ID: ${conversationId} with users ${sender_cat_name} (${senderId}) <-> ${recipient_cat_name} (${recipientId})`);
     } else {
       conversationId = convResult.rows[0].id;
+      console.log(`💬 Found existing conversation ID: ${conversationId} between ${sender_cat_name} (${senderId}) and ${recipient_cat_name} (${recipientId})`);
     }
 
     // Insert message
@@ -1062,6 +1065,23 @@ app.get("/api/messages/:user_cat_name/:other_cat_name", async (req, res) => {
 
     const conversationId = convResult.rows[0].id;
     console.log(`💬 Found conversation ID: ${conversationId}`);
+
+    // Debug: Check who is actually in this conversation
+    const convDebug = await pool.query(
+      `SELECT c.id, u1.cat_name as user1, u2.cat_name as user2, c.user1_id, c.user2_id FROM conversations c
+       JOIN users u1 ON c.user1_id = u1.id
+       JOIN users u2 ON c.user2_id = u2.id
+       WHERE c.id = $1`,
+      [conversationId]
+    );
+    if (convDebug.rows.length > 0) {
+      const conv = convDebug.rows[0];
+      console.log(`🔍 Conversation ${conversationId} contains: ${conv.user1} (${conv.user1_id}) <-> ${conv.user2} (${conv.user2_id})`);
+      console.log(`   Expected: ${user_cat_name} (${userId}) <-> ${other_cat_name} (${otherId})`);
+      if (conv.user1_id !== userId && conv.user2_id !== userId) {
+        console.log(`   ⚠️ WARNING: User ${user_cat_name} (${userId}) is NOT in this conversation!`);
+      }
+    }
 
     // Get all messages and mark as read
     const msgResult = await pool.query(
