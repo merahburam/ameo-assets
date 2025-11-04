@@ -899,6 +899,7 @@ app.get("/api/messages/list/:user_cat_name", async (req, res) => {
     const convResult = await pool.query(
       `SELECT
         c.id,
+        c.created_at,
         CASE
           WHEN c.user1_id = $1 THEN u2.cat_name
           ELSE u1.cat_name
@@ -914,7 +915,11 @@ app.get("/api/messages/list/:user_cat_name", async (req, res) => {
        JOIN users u1 ON c.user1_id = u1.id
        JOIN users u2 ON c.user2_id = u2.id
        WHERE c.user1_id = $1 OR c.user2_id = $1
-       ORDER BY COALESCE(last_message_time, c.created_at) DESC`,
+       ORDER BY CASE
+         WHEN (SELECT m.created_at FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) IS NOT NULL
+         THEN (SELECT m.created_at FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1)
+         ELSE c.created_at
+       END DESC`,
       [userId]
     );
 
