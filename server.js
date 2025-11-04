@@ -1029,6 +1029,7 @@ app.post("/api/messages/send", async (req, res) => {
 app.get("/api/messages/:user_cat_name/:other_cat_name", async (req, res) => {
   try {
     const { user_cat_name, other_cat_name } = req.params;
+    console.log(`📬 Getting conversation between ${user_cat_name} and ${other_cat_name}`);
 
     // Get user IDs
     const userResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [
@@ -1039,11 +1040,13 @@ app.get("/api/messages/:user_cat_name/:other_cat_name", async (req, res) => {
     ]);
 
     if (userResult.rows.length === 0 || otherResult.rows.length === 0) {
+      console.log(`❌ User not found: ${user_cat_name} or ${other_cat_name}`);
       return res.status(404).json({ error: "User not found" });
     }
 
     const userId = userResult.rows[0].id;
     const otherId = otherResult.rows[0].id;
+    console.log(`✅ Found users: ${user_cat_name} (ID: ${userId}), ${other_cat_name} (ID: ${otherId})`);
 
     // Get conversation
     const convResult = await pool.query(
@@ -1053,10 +1056,12 @@ app.get("/api/messages/:user_cat_name/:other_cat_name", async (req, res) => {
     );
 
     if (convResult.rows.length === 0) {
+      console.log(`📭 No conversation found between ${user_cat_name} and ${other_cat_name}, returning empty`);
       return res.json({ messages: [], otherUserInfo: { cat_name: other_cat_name, id: otherId } });
     }
 
     const conversationId = convResult.rows[0].id;
+    console.log(`💬 Found conversation ID: ${conversationId}`);
 
     // Get all messages and mark as read
     const msgResult = await pool.query(
