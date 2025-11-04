@@ -883,16 +883,30 @@ app.get("/api/messages/check-name/:name", async (req, res) => {
 app.get("/api/messages/list/:user_cat_name", async (req, res) => {
   try {
     const { user_cat_name } = req.params;
+    console.log(`📨 Loading conversations for user: ${user_cat_name}`);
 
     const userResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [
       user_cat_name,
     ]);
 
     if (userResult.rows.length === 0) {
+      console.log(`❌ User not found: ${user_cat_name}`);
       return res.status(404).json({ error: "User not found" });
     }
 
     const userId = userResult.rows[0].id;
+    console.log(`✅ User found: ${user_cat_name} (ID: ${userId})`);
+
+    // Debug: Check all conversations in the database
+    const allConvsDebug = await pool.query(
+      `SELECT c.id, u1.cat_name as user1, u2.cat_name as user2, c.user1_id, c.user2_id FROM conversations c
+       JOIN users u1 ON c.user1_id = u1.id
+       JOIN users u2 ON c.user2_id = u2.id`
+    );
+    console.log(`🔍 Total conversations in DB: ${allConvsDebug.rows.length}`);
+    allConvsDebug.rows.forEach(row => {
+      console.log(`   - Conv ${row.id}: ${row.user1} (${row.user1_id}) <-> ${row.user2} (${row.user2_id})`);
+    });
 
     // Get all conversations with latest message
     // Order by: last message time DESC (most recent first), then by conversation creation time
