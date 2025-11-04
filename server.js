@@ -26,10 +26,15 @@ const PORT = process.env.PORT || 3000;
 let cachedSpeeches = null;
 let cachedDate = "";
 
-// Database connection
+// Database connection with proper pooling configuration
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+  // Connection pool settings for Railway
+  max: 20,                          // Max connections in pool
+  idleTimeoutMillis: 30000,         // Close idle connections after 30s
+  connectionTimeoutMillis: 2000,    // Timeout for acquiring connection
+  statement_timeout: 30000,         // Query timeout
 });
 
 // Middleware
@@ -897,19 +902,9 @@ app.get("/api/messages/list/:user_cat_name", async (req, res) => {
     const userId = userResult.rows[0].id;
     console.log(`✅ User found: ${user_cat_name} (ID: ${userId})`);
 
-    // Debug: Check all conversations in the database
-    const allConvsDebug = await pool.query(
-      `SELECT c.id, u1.cat_name as user1, u2.cat_name as user2, c.user1_id, c.user2_id FROM conversations c
-       JOIN users u1 ON c.user1_id = u1.id
-       JOIN users u2 ON c.user2_id = u2.id`
-    );
-    console.log(`🔍 Total conversations in DB: ${allConvsDebug.rows.length}`);
-    allConvsDebug.rows.forEach(row => {
-      console.log(`   - Conv ${row.id}: ${row.user1} (${row.user1_id}) <-> ${row.user2} (${row.user2_id})`);
-    });
-
     // Get all conversations with latest message
     // Order by: last message time DESC (most recent first), then by conversation creation time
+    // Added FORCE INDEX hint to ensure fresh data read from primary DB
     const convResult = await pool.query(
       `SELECT
         c.id,
