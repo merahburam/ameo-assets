@@ -895,6 +895,7 @@ app.get("/api/messages/list/:user_cat_name", async (req, res) => {
     const userId = userResult.rows[0].id;
 
     // Get all conversations with latest message
+    // ORDER BY: first by last message time (newest first), then by creation time (newest first) for conversations with no messages
     const convResult = await pool.query(
       `SELECT
         c.id,
@@ -913,7 +914,7 @@ app.get("/api/messages/list/:user_cat_name", async (req, res) => {
        JOIN users u1 ON c.user1_id = u1.id
        JOIN users u2 ON c.user2_id = u2.id
        WHERE c.user1_id = $1 OR c.user2_id = $1
-       ORDER BY last_message_time DESC NULLS LAST`,
+       ORDER BY COALESCE(last_message_time, c.created_at) DESC`,
       [userId]
     );
 
