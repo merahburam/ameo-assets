@@ -3375,7 +3375,9 @@
       // MESSAGING SYSTEM
       // ============================================
 
-      const API_BASE_URL =
+      const API_MESSAGES_URL =
+        "https://ameo-production.up.railway.app/api/messages";
+      const API_TYPING_URL =
         "https://ameo-production.up.railway.app/api";
       let currentCatName = null;
       let selectedConversationUser = null;
@@ -3723,7 +3725,7 @@
 
         try {
           // Register or get user
-          const registerRes = await fetch(`${API_BASE_URL}/register`, {
+          const registerRes = await fetch(`${API_MESSAGES_URL}/register`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ cat_name: currentCatName }),
@@ -3750,7 +3752,7 @@
           // Add timestamp to force fresh database query (cache buster)
           const cacheBreaker = `?t=${Date.now()}`;
           const response = await fetch(
-            `${API_BASE_URL}/list/${currentCatName}${cacheBreaker}`,
+            `${API_MESSAGES_URL}/list/${currentCatName}${cacheBreaker}`,
             { cache: "no-store" } // Force fresh data, no caching
           );
           const data = await response.json();
@@ -3896,7 +3898,7 @@
 
             // Add cache buster to ensure fresh conversation data
             const cacheBreaker = `?t=${Date.now()}`;
-            const url = `${API_BASE_URL}/${currentCatName}/${otherCatName}${cacheBreaker}&offset=${paginationState.currentOffset}&limit=${paginationState.pageSize}`;
+            const url = `${API_MESSAGES_URL}/${currentCatName}/${otherCatName}${cacheBreaker}&offset=${paginationState.currentOffset}&limit=${paginationState.pageSize}`;
             console.log(`📬 Loading conversation from: ${url}`);
 
             const response = await fetch(url, { cache: "no-store" });
@@ -3960,7 +3962,7 @@
           const nextOffset =
             paginationState.currentOffset + paginationState.pageSize;
           const cacheBreaker = `?t=${Date.now()}`;
-          const url = `${API_BASE_URL}/${currentCatName}/${selectedConversationUser}${cacheBreaker}&offset=${nextOffset}&limit=${paginationState.pageSize}`;
+          const url = `${API_MESSAGES_URL}/${currentCatName}/${selectedConversationUser}${cacheBreaker}&offset=${nextOffset}&limit=${paginationState.pageSize}`;
 
           console.log(`📜 Loading more messages... offset: ${nextOffset}`);
 
@@ -4235,7 +4237,7 @@
             await sendCatMessage(content);
           } else {
             // Regular message to other cats
-            const response = await fetch(`${API_BASE_URL}/send`, {
+            const response = await fetch(`${API_MESSAGES_URL}/send`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -4338,7 +4340,7 @@
         if (!currentCatName || !conversationId) return;
 
         try {
-          const response = await fetch(`${API_BASE_URL}/typing/set`, {
+          const response = await fetch(`${API_TYPING_URL}/typing/set`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -4362,7 +4364,7 @@
 
         try {
           const response = await fetch(
-            `${API_BASE_URL}/typing/${conversationId}`
+            `${API_TYPING_URL}/typing/${conversationId}`
           );
           if (!response.ok) return [];
 
@@ -4563,7 +4565,7 @@
         inviteBtn.disabled = true;
 
         try {
-          const response = await fetch(`${API_BASE_URL}/check-name/${catName}`);
+          const response = await fetch(`${API_MESSAGES_URL}/check-name/${catName}`);
           const data = await response.json();
 
           if (!data.exists) {
@@ -4592,7 +4594,7 @@
         messagePollingInterval = setInterval(async () => {
           try {
             const response = await fetch(
-              `${API_BASE_URL}/unread/${currentCatName}`
+              `${API_MESSAGES_URL}/unread/${currentCatName}`
             );
             const data = await response.json();
 
