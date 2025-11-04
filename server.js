@@ -895,11 +895,10 @@ app.get("/api/messages/list/:user_cat_name", async (req, res) => {
     const userId = userResult.rows[0].id;
 
     // Get all conversations with latest message
-    // ORDER BY: first by last message time (newest first), then by creation time (newest first) for conversations with no messages
+    // Order by: last message time DESC (most recent first), then by conversation creation time
     const convResult = await pool.query(
       `SELECT
         c.id,
-        c.created_at,
         CASE
           WHEN c.user1_id = $1 THEN u2.cat_name
           ELSE u1.cat_name
@@ -915,18 +914,18 @@ app.get("/api/messages/list/:user_cat_name", async (req, res) => {
        JOIN users u1 ON c.user1_id = u1.id
        JOIN users u2 ON c.user2_id = u2.id
        WHERE c.user1_id = $1 OR c.user2_id = $1
-       ORDER BY CASE
-         WHEN (SELECT m.created_at FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) IS NOT NULL
-         THEN (SELECT m.created_at FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1)
-         ELSE c.created_at
-       END DESC`,
+       ORDER BY
+         (SELECT m.created_at FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) DESC NULLS LAST,
+         c.created_at DESC`,
       [userId]
     );
 
+    console.log(`📋 Found ${convResult.rows.length} conversations for user ID ${userId}`);
     res.json({ conversations: convResult.rows });
   } catch (error) {
     console.error("Get conversations error:", error.message);
-    res.status(500).json({ error: "Failed to get conversations" });
+    console.error("Full error:", error);
+    res.status(500).json({ error: "Failed to get conversations", details: error.message });
   }
 });
 
