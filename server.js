@@ -1093,7 +1093,7 @@ app.get("/api/messages/:user_cat_name/:other_cat_name", async (req, res) => {
 
     // Get paginated messages (offset from oldest, ascending order)
     const msgResult = await pool.query(
-      `SELECT m.id, m.content, m.sender_id, m.created_at, u.cat_name
+      `SELECT m.id, m.content, m.sender_id, m.created_at, m.is_read, u.cat_name
        FROM messages m
        JOIN users u ON m.sender_id = u.id
        WHERE m.conversation_id = $1
@@ -1108,9 +1108,17 @@ app.get("/api/messages/:user_cat_name/:other_cat_name", async (req, res) => {
       [conversationId, otherId]
     );
 
+    // Enrich messages with status field based on sender and is_read
+    const enrichedMessages = msgResult.rows.map((msg) => ({
+      ...msg,
+      status: msg.sender_id === userId
+        ? (msg.is_read ? "read" : "received")  // Sent by current user: if other user read it, status = "read", else "received"
+        : null  // Received messages don't have status in UI
+    }));
+
     res.json({
       conversation_id: conversationId,
-      messages: msgResult.rows,
+      messages: enrichedMessages,
       total_count: totalCount,
       offset: offset,
       limit: limit,
