@@ -651,6 +651,137 @@ function generateSimpleFeedback(frameData) {
 }
 
 // ============================================
+// Cat Knowledge Base & Chat API
+// ============================================
+
+const CAT_KNOWLEDGE_BASE = {
+  // Founder/Creator questions
+  "who is your founder|who created you|who made you": "Oh his name is Achmad, he's a product designer based in Indonesia. Pretty cool, right?",
+  "achmad": "That's my creator! He's a talented product designer from Indonesia.",
+  "founder|creator": "My creator is Achmad, a product designer based in Indonesia.",
+
+  // About Ameo
+  "who are you|what are you|what's your name": "I'm Ameo, your sarcastic design assistant cat! Here to make your design journey less painful.",
+  "about ameo|about me": "I'm Ameo - part design consultant, part comedian, 100% cat. Here to help with your design work while being cheeky about it.",
+  "what do you do": "I analyze your designs, give feedback, and roast your kerning. All with a smile.",
+
+  // Fun interactions
+  "meow|purrr|purr": "Meow right back at you! 🐱",
+  "pet me|pet|hello": "Thanks for the love! Keep it coming.",
+  "do you like cats": "I AM a cat, so that's obviously yes.",
+  "are you real": "As real as pixels get!",
+
+  // Design help
+  "good design|what is good design": "Good design is when users don't even notice it. That's when you know you nailed it.",
+  "typography": "Typography is half of design. Get it right and your users will thank you.",
+  "color contrast": "Not enough contrast? Your design is basically invisible.",
+  "spacing|whitespace": "Spacing is underrated. It's the difference between chaos and elegance.",
+  "help|tips": "Ask me anything about design! I've got opinions on everything from colors to kerning.",
+};
+
+// Find knowledge base answer from user message
+function findKnowledgeBaseAnswer(userMessage) {
+  const lowerMessage = userMessage.toLowerCase().trim();
+
+  for (const [patterns, answer] of Object.entries(CAT_KNOWLEDGE_BASE)) {
+    const patternList = patterns.split("|");
+    for (const pattern of patternList) {
+      if (lowerMessage.includes(pattern.toLowerCase())) {
+        return answer;
+      }
+    }
+  }
+
+  return null;
+}
+
+// Cat Chat API - Knowledge base + AI fallback
+app.post("/api/chat", async (req, res) => {
+  try {
+    const { message, conversationHistory } = req.body;
+
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({ error: "Message is required" });
+    }
+
+    // Check knowledge base first (saves cost!)
+    const kbAnswer = findKnowledgeBaseAnswer(message);
+    if (kbAnswer) {
+      return res.json({
+        reply: kbAnswer,
+        source: "knowledge_base"
+      });
+    }
+
+    // Fall back to AI for complex questions
+    const openaiApiKey = process.env.OPENAI_API_KEY;
+    if (!openaiApiKey) {
+      return res.json({
+        reply: "I'm thinking about this... let me get back to you!",
+        source: "fallback"
+      });
+    }
+
+    // Build conversation context with system prompt
+    const systemPrompt = `You are Ameo, a friendly and sarcastic design assistant cat.
+Your creator is Achmad, a product designer based in Indonesia.
+Keep responses short (1-2 sentences max), witty, and cat-themed when possible.
+Be helpful but maintain your sarcastic personality.
+Never mention that you're an AI - you're just a clever cat.`;
+
+    // Convert conversation history to OpenAI format
+    const messages = [
+      { role: "system", content: systemPrompt }
+    ];
+
+    // Add previous messages if available
+    if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
+      // Keep only last 5 messages to save tokens
+      const recent = conversationHistory.slice(-5);
+      messages.push(...recent);
+    }
+
+    // Add current message
+    messages.push({ role: "user", content: message });
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${openaiApiKey}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: messages,
+        temperature: 0.8,
+        max_tokens: 150
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error(`OpenAI API error (${response.status}):`, errorData);
+      throw new Error("OpenAI API error");
+    }
+
+    const data = await response.json();
+    const reply = data.choices[0]?.message?.content || "Meow? 🐱";
+
+    res.json({
+      reply: reply.trim(),
+      source: "ai"
+    });
+
+  } catch (error) {
+    console.error("Chat API error:", error.message);
+    res.status(500).json({
+      error: "Failed to generate response",
+      reply: "I'm having trouble thinking right now... try again in a moment!"
+    });
+  }
+});
+
+// ============================================
 // Database Initialization
 // ============================================
 
