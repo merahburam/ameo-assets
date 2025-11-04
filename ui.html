@@ -1,0 +1,5366 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ameo - Your Virtual Pet</title>
+    <!-- Google Material Symbols -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&display=block" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background: #fff;
+        color: #333;
+        min-height: 100vh;
+        padding: 12px;
+      }
+
+      .container {
+        max-width: 360px;
+        margin: 0 auto;
+        background: white
+          url("https://ameo-production.up.railway.app/bg-plugin-01.png")
+          center/cover no-repeat;
+        overflow: hidden;
+        border: 1px solid #000;
+        position: relative;
+      }
+
+      .container.app-open {
+        background: #f2f2f6;
+      }
+
+      /* Google Material Symbols */
+      .material-symbols-outlined {
+        font-family: "Material Symbols Outlined";
+        font-weight: normal;
+        font-style: normal;
+        font-size: 24px;
+        display: inline-block;
+        line-height: 1;
+        text-transform: none;
+        letter-spacing: normal;
+        word-wrap: normal;
+        white-space: nowrap;
+        direction: ltr;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        background: transparent;
+        color: white;
+        padding: 8px 0 4px;
+        position: relative;
+      }
+
+      .header h1 {
+        font-size: 24px;
+        margin-bottom: 4px;
+      }
+
+      .header p {
+        font-size: 12px;
+        opacity: 0.9;
+      }
+
+      /* iPhone-style signal indicator */
+      .signal-indicator {
+        display: flex;
+        align-items: flex-end;
+        gap: 1px;
+        height: 9px;
+      }
+
+      .signal-bar {
+        width: 2px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 10px;
+        transition: background 0.3s ease;
+      }
+
+      .signal-bar.bar-1 {
+        height: 3px;
+      }
+      .signal-bar.bar-2 {
+        height: 5px;
+      }
+      .signal-bar.bar-3 {
+        height: 7px;
+      }
+      .signal-bar.bar-4 {
+        height: 9px;
+      }
+
+      .signal-bar.active {
+        background: rgba(255, 255, 255, 1);
+      }
+
+      .signal-text {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.8);
+        font-weight: 500;
+      }
+
+      /* iPhone-style time display */
+      .time-display {
+        font-size: 9px;
+        color: white;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+      }
+
+      /* iPhone-style battery indicator */
+      .battery-indicator {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: opacity 0.2s ease;
+        margin: 0 8px 0 0;
+      }
+
+      .battery-indicator.hidden {
+        display: none;
+      }
+
+      .battery-icon {
+        width: 16px;
+        height: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        border-radius: 3px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        padding: 1px;
+      }
+
+      .battery-icon::after {
+        content: "";
+        position: absolute;
+        right: -4px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 2px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: 0 2px 2px 0;
+      }
+
+      .battery-level {
+        height: 100%;
+        background: white;
+        border-radius: 1px;
+        transition: width 0.3s ease, background 0.3s ease;
+      }
+
+      .battery-level.low {
+        background: #ff3b30;
+      }
+
+      .battery-level.charging {
+        background: #34c759;
+      }
+
+      .battery-percentage {
+        font-size: 9px;
+        color: white;
+        font-weight: 600;
+      }
+
+      /* Header center group - flex container for dynamic layout */
+      .header-center-group {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+      }
+
+      /* Pomodoro countdown in header */
+      .header-countdown {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        padding: 0 2px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+
+      .header-countdown:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .header-countdown.hidden {
+        display: none;
+      }
+
+      .countdown-icon {
+        font-size: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .countdown-text {
+        font-size: 9px;
+        color: white;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+      }
+
+      .header-task-counter {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        padding: 0 2px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+
+      .header-task-counter:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .header-task-counter.hidden {
+        display: none;
+      }
+
+      .task-counter-icon {
+        font-size: 11px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .task-counter-text {
+        width: max-content;
+        font-size: 9px;
+        color: white;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+      }
+
+      .battery-indicator {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .battery-indicator.hidden {
+        display: none;
+      }
+
+      #signal-container {
+        display: flex;
+        align-items: center;
+      }
+
+      #signal-container.hidden {
+        display: none;
+      }
+
+      .content {
+        padding: 0 12px 12px;
+        height: 288px;
+        contain: layout style paint;
+      }
+
+      .input-group {
+        margin-bottom: 16px;
+      }
+
+      .input-group label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: #666;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .input-group input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.2s;
+      }
+
+      .input-group input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .button-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      .button {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        letter-spacing: 0.5px;
+      }
+
+      .button.primary {
+        background: #667eea;
+        color: white;
+        grid-column: 1 / -1;
+      }
+
+      .button.primary:active {
+        opacity: 0.8;
+      }
+
+      .button.secondary {
+        background: #f0f4ff;
+        color: #667eea;
+        border: 1px solid #667eea;
+      }
+
+      .button.secondary:hover {
+        background: #e8ecff;
+      }
+
+      .button.danger {
+        background: #ffebee;
+        color: #c62828;
+        border: 1px solid #c62828;
+        grid-column: 1 / -1;
+      }
+
+      .button.danger:hover {
+        background: #ffcdd2;
+      }
+
+      .tabs {
+        display: flex;
+        border-bottom: 1px solid #eee;
+        margin-bottom: 16px;
+      }
+
+      .tab {
+        flex: 1;
+        padding: 12px;
+        background: none;
+        border: none;
+        font-size: 13px;
+        font-weight: 600;
+        color: #999;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+      }
+
+      .tab.active {
+        color: #667eea;
+        border-bottom-color: #667eea;
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      .pomodoro-timer {
+        text-align: center;
+      }
+
+      /* Back Button */
+      .back-button-wrapper {
+        display: flex;
+        justify-content: center;
+        margin: 12px 0 0;
+      }
+
+      .back-button {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        transition: opacity 0.2s, transform 0.1s;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .back-button:hover {
+        opacity: 0.8;
+      }
+
+      .back-button.active {
+        opacity: 0.6;
+        transform: scale(0.95);
+      }
+
+      .back-button img {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      /* App Grid */
+      .app-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        width: 192px;
+        margin: 0 auto;
+        margin-top: 16px;
+      }
+
+      .app-button {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        transition: opacity 0.2s, transform 0.1s;
+      }
+
+      .app-button:hover {
+        opacity: 0.8;
+      }
+
+      .app-button.active {
+        opacity: 0.6;
+        transform: scale(0.95);
+      }
+
+      .app-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+
+      .app-icon {
+        width: 39px;
+        height: 39px;
+        border-radius: 8px;
+        background: #f0f4ff;
+        border: 1px solid #e0e8ff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .app-icon img {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .app-label {
+        font-size: 8px;
+        font-weight: 500;
+        color: #fff;
+        text-align: center;
+        max-width: 39px;
+        word-wrap: break-word;
+        line-height: 1.1;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      }
+
+      /* App Screen */
+      .app-screen {
+        padding: 0;
+      }
+
+      .app-screen-scrollable {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+
+      .app-screen-scrollable > * {
+        padding: 0;
+      }
+
+      .app-screen-scrollable > :first-child {
+        padding: 0;
+      }
+
+      .app-screen-scrollable > :last-child {
+        padding-bottom: 16px;
+      }
+
+      .app-screen h2 {
+        margin: 16px 0 12px;
+        font-size: 20px;
+        font-weight: 600;
+        color: #333;
+      }
+
+      /* Activities Grid */
+      .activities-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-top: 16px;
+      }
+
+      .activity-button {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px;
+        border: none;
+        border-radius: 8px;
+        background: #fff;
+        cursor: pointer;
+        transition: opacity 0.2s, transform 0.1s;
+      }
+
+      .activity-button:hover {
+        opacity: 0.9;
+      }
+
+      .activity-button:active {
+        transform: scale(0.95);
+      }
+
+      .activity-button[data-activity="coming-soon"] {
+        opacity: 0.6;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+
+      .activity-emoji {
+        font-size: 20px;
+      }
+
+      .activity-label {
+        font-size: 9px;
+        font-weight: 500;
+        color: #333;
+      }
+
+      /* Game Screens Styles */
+      .game-description {
+        font-size: 14px;
+        color: #666;
+        margin: 16px 0;
+        text-align: center;
+      }
+
+      .game-header {
+        margin-bottom: 16px;
+      }
+
+      .game-header h3 {
+        margin: 0 0 8px;
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .game-instruction {
+        margin: 0;
+        font-size: 12px;
+        color: #666;
+        line-height: 1.4;
+      }
+
+      .game-stats {
+        display: flex;
+        justify-content: space-around;
+        gap: 16px;
+        margin: 16px 0;
+        padding: 12px;
+        background: #f9f9f9;
+        border-radius: 8px;
+      }
+
+      .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .stat-label {
+        font-size: 11px;
+        color: #999;
+        font-weight: 500;
+      }
+
+      .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #667eea;
+      }
+
+      .game-status-text {
+        text-align: center;
+        font-size: 12px;
+        color: #666;
+        margin: 12px 0;
+      }
+
+      .high-score-display {
+        margin-top: 12px;
+        padding: 12px;
+        background: #f0f4ff;
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      .high-score-display p {
+        margin: 0;
+        font-size: 13px;
+        color: #667eea;
+        font-weight: 500;
+      }
+
+      .game-result {
+        text-align: center;
+        margin: 16px 0;
+        padding: 16px;
+        background: #f9f9f9;
+        border-radius: 8px;
+      }
+
+      .result-text {
+        margin: 0 0 12px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .final-stats {
+        text-align: center;
+      }
+
+      .final-stats p {
+        margin: 12px 0;
+        font-size: 13px;
+        color: #666;
+      }
+
+      .final-stats span {
+        display: block;
+        font-size: 20px;
+        font-weight: 700;
+        color: #667eea;
+        margin-top: 4px;
+      }
+
+      .level-info {
+        background: #f0f4ff;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 16px;
+        text-align: center;
+      }
+
+      .level-info p {
+        margin: 4px 0;
+        font-size: 13px;
+        color: #667eea;
+        font-weight: 500;
+      }
+
+      .level-details {
+        font-size: 12px;
+        color: #999;
+        font-weight: 400;
+      }
+
+      .level-header-progress {
+        text-align: center;
+        margin-bottom: 12px;
+        padding: 8px;
+        background: #f0f4ff;
+        border-radius: 6px;
+      }
+
+      .level-header-progress p {
+        margin: 0;
+        font-size: 12px;
+        color: #667eea;
+        font-weight: 600;
+      }
+
+      .result-emoji {
+        font-size: 48px;
+        margin: 0 0 12px;
+        display: block;
+      }
+
+      #new-high-score-msg {
+        color: #ff6b6b;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 8px;
+      }
+
+      #new-high-score-msg.hidden {
+        display: none;
+      }
+
+      /* Tasks App Styles */
+      #app-tasks {
+        display: flex;
+        flex-direction: column;
+        height: 92%;
+      }
+
+      #app-tasks h2 {
+        flex-shrink: 0;
+      }
+
+      .tasks-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 16px 0 12px;
+      }
+
+      .tasks-header h2 {
+        margin: 0;
+      }
+
+      .delete-all-btn {
+        background: none;
+        border: none;
+        padding: 2px;
+        cursor: pointer;
+        color: #999;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+      }
+
+      .delete-all-btn:hover {
+        background: #f0f0f0;
+        color: #e74c3c;
+      }
+
+      .delete-all-btn .material-symbols-outlined {
+        font-size: 16px;
+      }
+
+      .task-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex: 1;
+        overflow-y: auto;
+      }
+
+      .task-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 8px;
+        background: #f9f9f9;
+        border-radius: 4px;
+        gap: 10px;
+        border: 1px solid #e5e5ea;
+        transition: all 0.2s ease;
+        cursor: grab;
+        user-select: none;
+        animation: taskSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      .task-item:active {
+        cursor: grabbing;
+      }
+
+      .task-item:hover {
+        background: #f2f2f6;
+        border-color: #d0d0d5;
+      }
+
+      .task-item.completed {
+        opacity: 0.6;
+      }
+
+      .task-item.completed .task-text {
+        text-decoration: line-through;
+        color: #999;
+      }
+
+      .task-checkbox {
+        width: 12px;
+        height: 12px;
+        cursor: pointer;
+        accent-color: #667eea;
+        flex-shrink: 0;
+      }
+
+      .task-text {
+        flex: 1;
+        font-size: 9px;
+        color: #333;
+        word-break: break-word;
+      }
+
+      .task-text:focus {
+        border: 1px solid #667eea;
+        border-radius: 2px;
+      }
+
+      .task-text:focus-visible {
+        display: none;
+      }
+
+      .task-text:active {
+        border: 1px solid #667eea;
+        border-radius: 2px;
+      }
+
+      .task-frame-btn {
+        background: none;
+        border: none;
+        color: #667eea;
+        cursor: pointer;
+        padding: 0;
+        border-radius: 4px;
+        transition: background 0.2s ease;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .task-frame-btn .material-symbols-outlined {
+        font-size: 12px;
+      }
+
+      .task-frame-btn:hover {
+        background: #e8ecff;
+      }
+
+      .task-delete-btn {
+        background: none;
+        border: none;
+        color: #ff6b6b;
+        cursor: pointer;
+        padding: 0;
+        border-radius: 4px;
+        transition: background 0.2s ease;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .task-delete-btn .material-symbols-outlined {
+        font-size: 12px;
+        width: 12px;
+        height: 12px;
+      }
+
+      .task-delete-btn:hover {
+        background: #ffe8e8;
+      }
+
+      .task-input-container {
+        display: flex;
+        gap: 0;
+        padding: 12px 0 0;
+        background: transparent;
+        align-items: flex-end;
+        flex-shrink: 0;
+      }
+
+      #new-task-input {
+        flex: 1;
+        padding: 5px 8px;
+        border: 1px solid #e0e0e0;
+        border-radius: 16px;
+        font-size: 11px;
+        font-family: inherit;
+        resize: none;
+        height: 28px;
+        max-height: 64px;
+        overflow-y: scroll;
+        line-height: 1.4;
+        word-wrap: break-word;
+        white-space: normal;
+        transition: border-color 0.2s ease;
+        box-sizing: border-box;
+      }
+
+      /* Hide scrollbar but keep scrolling functionality */
+      #new-task-input::-webkit-scrollbar {
+        width: 0;
+      }
+
+      #new-task-input {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      #new-task-input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      #new-task-input::placeholder {
+        color: #999;
+      }
+
+      .add-task-btn {
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 16px;
+        font-size: 16px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background 0.2s, opacity 0.2s, width 0.2s, margin 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        width: 0;
+        margin: 0;
+        flex-shrink: 0;
+      }
+
+      .add-task-btn.visible {
+        opacity: 1;
+        pointer-events: auto;
+        width: 28px;
+        margin-left: 8px;
+      }
+
+      .add-task-btn:hover {
+        background: #5568d3;
+      }
+
+      .add-task-btn:active {
+        background: #4555bb;
+      }
+
+      .empty-tasks-state {
+        text-align: center;
+        padding: 16px 0 0;
+        color: #999;
+      }
+
+      .empty-tasks-state p {
+        margin: 8px 0;
+        font-size: 14px;
+      }
+
+      .empty-tasks-emoji {
+        font-size: 48px;
+        margin-bottom: 12px;
+      }
+
+      /* Settings Page Styles */
+      .settings-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+
+      .settings-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #e5e5ea;
+        cursor: pointer;
+      }
+
+      .settings-row:last-child {
+        border-bottom: none;
+      }
+
+      .settings-label {
+        font-size: 9px;
+        font-weight: 500;
+        color: #333;
+      }
+
+      .settings-value {
+        font-size: 9px;
+        color: #007aff;
+        font-weight: 500;
+      }
+
+      /* Toggle Switch */
+      .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 30px;
+        height: 16px;
+      }
+
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.3s;
+        border-radius: 28px;
+      }
+
+      .toggle-slider::before {
+        position: absolute;
+        content: "";
+        height: 12px;
+        width: 12px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+      }
+
+      input:checked + .toggle-slider {
+        background-color: #34c759;
+      }
+
+      input:checked + .toggle-slider::before {
+        transform: translateX(14px);
+      }
+
+      /* Label with Icon Container */
+      .settings-label-with-icon {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .settings-info-icon {
+        font-size: 14px;
+        color: #999;
+        cursor: pointer;
+        transition: color 0.2s ease;
+      }
+
+      .settings-info-icon:hover {
+        color: #666;
+      }
+
+      /* Bottom Sheet Styles */
+      .bottomsheet {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+      }
+
+      .bottomsheet.hidden {
+        display: none;
+      }
+
+      .bottomsheet-overlay {
+        position: absolute;
+        top: -9999px;
+        left: 0;
+        right: 0;
+        bottom: -9999px;
+        background: rgba(0, 0, 0, 0.3);
+        z-index: 999;
+        pointer-events: auto;
+      }
+
+      .bottomsheet-content {
+        background: white;
+        border-radius: 12px 12px 0 0;
+        padding: 0;
+        z-index: 1001;
+        animation: slideUp 0.3s ease-out;
+      }
+
+      #auto-pause-info-bottomsheet .bottomsheet-content {
+        height: 80%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      @keyframes slideUp {
+        from {
+          transform: translateY(100%);
+        }
+        to {
+          transform: translateY(0);
+        }
+      }
+
+      .bottomsheet-header {
+        padding: 16px 12px 12px;
+        flex-shrink: 0;
+        background: white;
+        border-radius: 12px 12px 0 0;
+      }
+
+      #auto-pause-info-bottomsheet .bottomsheet-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      .bottomsheet-header h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+      }
+
+      .bottomsheet-info {
+        font-size: 9px;
+        color: #999;
+        margin: 8px 0 4px;
+      }
+
+      .bottomsheet-body {
+        padding: 0 12px;
+        overflow-y: auto;
+        flex: 1;
+      }
+
+      /* Scrollbar styling for bottom sheet */
+      .bottomsheet-body::-webkit-scrollbar {
+        width: 4px;
+      }
+
+      .bottomsheet-body::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .bottomsheet-body::-webkit-scrollbar-thumb {
+        background: #ccc;
+        border-radius: 2px;
+      }
+
+      .bottomsheet-body::-webkit-scrollbar-thumb:hover {
+        background: #999;
+      }
+
+      .bottomsheet-body {
+        scrollbar-width: thin;
+        scrollbar-color: #ccc transparent;
+      }
+
+      .bottomsheet-actions {
+        padding: 12px;
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+        border-top: 1px solid #e5e5ea;
+      }
+
+      .bottomsheet-actions .button {
+        flex: 1;
+      }
+
+      .cat-name-input {
+        width: 100%;
+        padding: 5px 8px;
+        border: 1px solid #e5e5ea;
+        border-radius: 16px;
+        font-size: 11px;
+        font-family: inherit;
+        box-sizing: border-box;
+      }
+
+      .cat-name-input::placeholder {
+        color: #ccc;
+      }
+
+      .cat-name-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+      }
+
+      .bottomsheet-footer {
+        display: flex;
+        gap: 12px;
+        padding: 12px;
+        flex-shrink: 0;
+      }
+
+      .btn-update-cat-name {
+        flex: 1;
+        padding: 8px 16px;
+        background: #007aff;
+        color: white;
+        border: none;
+        border-radius: 16px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .btn-update-cat-name:active {
+        opacity: 0.8;
+      }
+
+      .btn-close-auto-pause-info {
+        flex: 1;
+        padding: 8px 16px;
+        background: #007aff;
+        color: white;
+        border: none;
+        border-radius: 16px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .btn-close-auto-pause-info:active {
+        opacity: 0.8;
+      }
+
+      .bottomsheet-section-title {
+        font-weight: 600;
+        margin: 12px 0 4px;
+        font-size: 12px;
+        color: #333;
+      }
+
+      .bottomsheet-section-title:first-child {
+        margin-top: 0;
+      }
+
+      .bottomsheet-text {
+        font-size: 9px;
+        line-height: 1.5;
+        color: #333;
+        margin: 0 0 8px 0;
+      }
+
+      .bottomsheet-text:last-of-type {
+        margin-bottom: 12px;
+      }
+
+      /* Header colors when app screen is visible */
+      .container.app-open .time-display {
+        color: #333;
+      }
+
+      .container.app-open .battery-percentage {
+        color: #333;
+      }
+
+      .container.app-open .signal-bar {
+        background: rgba(51, 51, 51, 0.3);
+      }
+
+      .container.app-open .signal-bar.active {
+        background: rgba(51, 51, 51, 1);
+      }
+
+      .container.app-open .signal-text {
+        color: rgba(51, 51, 51, 0.8);
+      }
+
+      .container.app-open .battery-level {
+        background: #333;
+      }
+
+      .container.app-open .battery-icon {
+        border-color: rgba(51, 51, 51, 0.6);
+      }
+
+      .container.app-open .battery-icon::after {
+        background: rgba(51, 51, 51, 0.6);
+      }
+
+      .container.app-open .countdown-text {
+        color: #333;
+      }
+
+      .container.app-open .countdown-icon {
+        color: #333;
+      }
+
+      .container.app-open .task-counter-text {
+        color: #333;
+      }
+
+      .container.app-open .task-counter-icon {
+        color: #333;
+      }
+
+      .timer-display {
+        font-size: 36px;
+        font-weight: bold;
+        color: #667eea;
+        margin: 20px 0;
+        font-family: "Monaco", monospace;
+      }
+
+      /* Message container - floats at top like iPhone notification */
+      #message-container {
+        position: fixed;
+        top: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: 208px;
+        z-index: 9999;
+        padding: 4px;
+        pointer-events: none;
+      }
+
+      .message {
+        padding: 8px 0 0;
+        height: auto;
+        border-radius: 4px;
+        font-size: 11px;
+        animation: notificationSlideDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        pointer-events: auto;
+        /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); */
+      }
+
+      .message.success {
+        background: #e8f5e9;
+        color: #2e7d32;
+        padding: 8px 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      .message.error {
+        background: #ffebee;
+        color: #c62828;
+        padding: 8px 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      .message.info {
+        background: #e3f2fd;
+        color: #1565c0;
+        padding: 8px 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      @keyframes notificationSlideDown {
+        from {
+          transform: translateY(-100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes taskSlideUp {
+        from {
+          transform: translateY(20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .loading {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #667eea;
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.3;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      /* ============================================
+         Messages App Styling
+         ============================================ */
+
+      .messages-view {
+        display: flex;
+        flex-direction: column;
+        height: 92%;
+      }
+
+      .messages-header {
+        padding: 0;
+      }
+
+      .messages-header h2 {
+        margin: 16px 0 12px;
+        font-size: 20px;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .messages-actions {
+        display: flex;
+        gap: 4px;
+      }
+
+      .invite-input {
+        flex: 1;
+        padding: 0 0 0 8px;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        font-size: 12px;
+        font-family: inherit;
+      }
+
+      .invite-input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      .invite-btn {
+        width: 28px;
+        height: 28px;
+        border: 1px solid #e0e0e0;
+        background: #f5f5f5;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: background 0.2s, border-color 0.2s;
+      }
+
+      .invite-btn:hover {
+        background: #efefef;
+        border-color: #667eea;
+      }
+
+      .invite-btn:active {
+        background: #e0e0e0;
+      }
+
+      .chat-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px 0 0;
+      }
+
+      .chat-item {
+        padding: 8px 8px 4px;
+        margin-bottom: 8px;
+        background: #f9f9f9;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.2s;
+        border: 1px solid #f0f0f0;
+      }
+
+      .chat-item:hover {
+        background: #f0f0f0;
+      }
+
+      /* Special styling for Ameo chat item */
+      .ameo-chat-item {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: 1px solid #667eea;
+        margin-bottom: 12px;
+      }
+
+      .ameo-chat-item:hover {
+        background: linear-gradient(135deg, #5568d3 0%, #6a3f91 100%);
+      }
+
+      .ameo-chat-item .chat-item-name,
+      .ameo-chat-item .chat-item-message,
+      .ameo-chat-item .chat-item-time {
+        color: white;
+      }
+
+      .ameo-chat-item .chat-item-message {
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      .chat-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 4px;
+      }
+
+      .chat-item-name {
+        font-weight: 600;
+        color: #333;
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .chat-item-time {
+        font-size: 10px;
+        color: #999;
+      }
+
+      .chat-item-message {
+        font-size: 10px;
+        padding: 4px 0 0;
+        color: #666;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+      }
+
+      .chat-item-unread {
+        background-color: #e3f2fd;
+        border-color: #bbdefb;
+      }
+
+      .unread-badge {
+        background: #667eea;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: bold;
+        margin-left: 8px;
+      }
+
+      .empty-state {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: #999;
+        text-align: center;
+      }
+
+      .empty-state p {
+        margin: 4px 0;
+        font-size: 13px;
+      }
+
+      .empty-hint {
+        color: #bbb;
+        font-size: 11px;
+        margin-top: 8px;
+      }
+
+      .conversation-header {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        padding: 0;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .conv-back-btn {
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        padding: 0;
+        transition: opacity 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        color: #333;
+      }
+
+      .conv-back-btn .material-symbols-outlined {
+        font-size: 16px;
+      }
+
+      .conv-back-btn:hover {
+        opacity: 0.7;
+      }
+
+      #conv-title {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        flex: 1;
+      }
+
+      .messages-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+
+      /* Reduce scrollbar width for messages container */
+      .messages-container::-webkit-scrollbar {
+        width: 4px;
+      }
+
+      .messages-container::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .messages-container::-webkit-scrollbar-thumb {
+        background: #ccc;
+        border-radius: 2px;
+      }
+
+      .messages-container::-webkit-scrollbar-thumb:hover {
+        background: #999;
+      }
+
+      .messages-container {
+        scrollbar-width: thin;
+        scrollbar-color: #ccc transparent;
+      }
+
+      .message {
+        display: flex;
+        /* margin-bottom: 8px; */
+      }
+
+      .message.sent {
+        justify-content: flex-end;
+      }
+
+      .message.received {
+        justify-content: flex-start;
+      }
+
+      .message-bubble {
+        max-width: 100%;
+        padding: 4px 8px;
+        border-radius: 8px;
+        font-size: 11px;
+        line-height: 1.3;
+        word-wrap: break-word;
+      }
+
+      .message.sent .message-bubble {
+        background: #667eea;
+        color: white;
+        border-bottom-right-radius: 2px;
+      }
+
+      .message.received .message-bubble {
+        background: #e3e8ff;
+        color: #333;
+        border-bottom-left-radius: 2px;
+      }
+
+      .message-time {
+        font-size: 9px;
+        color: #999;
+        margin-top: 4px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
+
+      .message-status-icon {
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .message-status-icon.pending {
+        color: #bbb;
+      }
+
+      .message-status-icon.received {
+        color: #bbb;
+      }
+
+      .message-status-icon.read {
+        color: #667eea;
+      }
+
+      .message-date-header {
+        text-align: center;
+        padding: 4px 8px;
+        color: #333;
+        font-size: 8px;
+        font-weight: 500;
+        margin: 12px auto;
+        background: #fff;
+        border-radius: 12px;
+        width: fit-content;
+        position: sticky;
+        top: 6;
+        z-index: 10;
+      }
+
+      .typing-indicator {
+        display: flex;
+        gap: 4px;
+        padding: 8px 12px;
+        background: #f0f0f0;
+        border-radius: 8px;
+        width: fit-content;
+      }
+
+      .typing-dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: #333;
+        animation: typing 1.4s infinite;
+      }
+
+      .typing-dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+
+      .typing-dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+
+      @keyframes typing {
+        0%,
+        60%,
+        100% {
+          opacity: 0.5;
+        }
+        30% {
+          opacity: 1;
+        }
+      }
+
+      .message-input-area {
+        display: flex;
+        gap: 0;
+        padding: 12px 0 0;
+        background: transparent;
+        align-items: flex-end;
+      }
+
+      .message-input {
+        padding: 5px 8px;
+        border: 1px solid #e0e0e0;
+        border-radius: 16px;
+        font-size: 11px;
+        font-family: inherit;
+        resize: none;
+        height: 28px;
+        max-height: 64px;
+        overflow-y: scroll;
+        line-height: 1.4;
+        word-wrap: break-word;
+        white-space: normal;
+        flex: 1;
+        transition: flex 0.2s;
+        box-sizing: border-box;
+      }
+
+      /* Hide scrollbar but keep scrolling functionality */
+      .message-input::-webkit-scrollbar {
+        width: 0;
+      }
+
+      .message-input {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      .message-input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      .send-btn {
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: #667eea;
+        color: white;
+        border-radius: 16px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background 0.2s, opacity 0.2s, width 0.2s, margin 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        opacity: 0;
+        pointer-events: none;
+        width: 0;
+        margin: 0;
+      }
+
+      .send-btn.visible {
+        opacity: 1;
+        pointer-events: auto;
+        width: 28px;
+        margin-left: 8px;
+      }
+
+      .send-btn .material-symbols-outlined {
+        font-size: 16px;
+      }
+
+      .send-btn:hover {
+        background: #5568d3;
+      }
+
+      .send-btn:active {
+        background: #4555bb;
+      }
+
+      .send-btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="content">
+        <div class="header">
+          <!-- iPhone-style time display -->
+          <div id="time-display" class="time-display">--:--</div>
+
+          <!-- Header center group - flexible container for dynamic elements -->
+          <div class="header-center-group">
+            <!-- Pomodoro countdown in header (shown when not on Pomodoro page) -->
+            <div id="header-countdown" class="header-countdown hidden">
+              <span class="countdown-icon material-symbols-outlined"
+                >timer</span
+              >
+              <span id="header-countdown-text" class="countdown-text"
+                >25:00</span
+              >
+            </div>
+
+            <!-- Task Counter in Header -->
+            <div id="header-task-counter" class="header-task-counter hidden">
+              <span class="task-counter-icon material-symbols-outlined"
+                >checklist</span
+              >
+              <span id="header-task-counter-text" class="task-counter-text"
+                >0 tasks</span
+              >
+            </div>
+
+            <!-- iPhone-style battery indicator -->
+            <div class="battery-indicator">
+              <span id="battery-percentage" class="battery-percentage">--</span>
+              <div class="battery-icon">
+                <div
+                  id="battery-level"
+                  class="battery-level"
+                  style="width: 0%"></div>
+              </div>
+            </div>
+
+            <!-- iPhone-style signal indicator -->
+            <div id="signal-container">
+              <div id="signal-bars" class="signal-indicator">
+                <div class="signal-bar bar-1"></div>
+                <div class="signal-bar bar-2"></div>
+                <div class="signal-bar bar-3"></div>
+                <div class="signal-bar bar-4"></div>
+              </div>
+              <div id="signal-text" class="signal-text" style="display: none">
+                No Service
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="message-container"></div>
+
+        <!-- Setup Screen (Show only if REQUIRE_CAT_NAME) -->
+        <div id="setup-screen">
+          <div class="input-group">
+            <label for="cat-name-input">Cat Name (Required)</label>
+            <input
+              type="text"
+              id="cat-name-input"
+              maxlength="10"
+              placeholder="Enter your unique cat name"
+              required />
+          </div>
+
+          <div class="button-group">
+            <button class="button primary" id="btn-create-cat">
+              Create Cat
+            </button>
+          </div>
+        </div>
+
+        <!-- Home Screen (App Grid) -->
+        <div id="home-screen">
+          <div class="app-grid">
+            <button class="app-button" data-app="messages">
+              <div class="app-icon">
+                <img
+                  src="https://ameo-production.up.railway.app/ic-app-placeholder.png"
+                  alt="Messages" />
+              </div>
+              <div class="app-label">Messages</div>
+            </button>
+            <button class="app-button" data-app="activities">
+              <div class="app-icon">
+                <img
+                  src="https://ameo-production.up.railway.app/ic-app-placeholder.png"
+                  alt="Activities" />
+              </div>
+              <div class="app-label">Activities</div>
+            </button>
+
+            <button class="app-button" data-app="feedback">
+              <div class="app-icon">
+                <img
+                  src="https://ameo-production.up.railway.app/ic-app-placeholder.png"
+                  alt="Feedback" />
+              </div>
+              <div class="app-label">Feedback</div>
+            </button>
+            <button class="app-button" data-app="music">
+              <div class="app-icon">
+                <img
+                  src="https://ameo-production.up.railway.app/ic-app-placeholder.png"
+                  alt="Music" />
+              </div>
+              <div class="app-label">Music</div>
+            </button>
+            <button class="app-button" data-app="pomodoro">
+              <div class="app-icon">
+                <img
+                  src="https://ameo-production.up.railway.app/ic-app-placeholder.png"
+                  alt="Pomodoro" />
+              </div>
+              <div class="app-label">Pomodoro</div>
+            </button>
+            <button class="app-button" data-app="profile">
+              <div class="app-icon">
+                <img
+                  src="https://ameo-production.up.railway.app/ic-app-placeholder.png"
+                  alt="Games" />
+              </div>
+              <div class="app-label">Games</div>
+            </button>
+            <button class="app-button" data-app="tasks">
+              <div class="app-icon">
+                <img
+                  src="https://ameo-production.up.railway.app/ic-app-placeholder.png"
+                  alt="Tasks" />
+              </div>
+              <div class="app-label">Tasks</div>
+            </button>
+
+            <button class="app-button" data-app="settings">
+              <div class="app-icon">
+                <img
+                  src="https://ameo-production.up.railway.app/ic-app-placeholder.png"
+                  alt="Settings" />
+              </div>
+              <div class="app-label">Settings</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- App Screens -->
+        <!-- Messages App -->
+        <div id="app-messages" class="app-screen hidden">
+          <!-- Chat List View -->
+          <div id="messages-list-view" class="messages-view">
+            <div class="messages-header">
+              <h2>Messages</h2>
+              <div class="messages-actions">
+                <input
+                  type="text"
+                  id="invite-input"
+                  placeholder="Invite friend..."
+                  class="invite-input"
+                  maxlength="50" />
+                <button id="invite-btn" class="invite-btn">➕</button>
+              </div>
+            </div>
+
+            <div id="chat-list" class="chat-list">
+              <!-- Chat items will be populated here -->
+            </div>
+
+            <div id="empty-state" class="empty-state">
+              <p>No conversations yet</p>
+              <p class="empty-hint">Invite a friend by their cat name!</p>
+            </div>
+          </div>
+
+          <!-- Conversation View -->
+          <div id="messages-conversation-view" class="messages-view hidden">
+            <div class="conversation-header">
+              <button id="conv-back-btn" class="conv-back-btn">
+                <span class="material-symbols-outlined">arrow_back</span>
+              </button>
+              <h2 id="conv-title"></h2>
+            </div>
+
+            <div id="messages-container" class="messages-container">
+              <!-- Messages will be populated here -->
+            </div>
+
+            <div class="message-input-area">
+              <textarea
+                id="message-input"
+                placeholder="Type a message..."
+                class="message-input"
+                rows="1"></textarea>
+              <button id="send-btn" class="send-btn">
+                <span class="material-symbols-outlined">send</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activities App -->
+        <div id="app-activities" class="app-screen hidden">
+          <h2>Activities</h2>
+          <div class="activities-grid">
+            <button class="activity-button" data-activity="sleep">
+              <span class="activity-emoji" id="sleep-emoji">😴</span>
+              <span class="activity-label" id="sleep-label">Sleep</span>
+            </button>
+            <button class="activity-button" data-activity="dance">
+              <span class="activity-emoji">💃</span>
+              <span class="activity-label">Dance</span>
+            </button>
+            <button class="activity-button" data-activity="coming-soon">
+              <span class="activity-emoji">🎮</span>
+              <span class="activity-label">Coming Soon</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Feedback App -->
+        <div id="app-feedback" class="app-screen hidden">
+          <h2>Feedback</h2>
+          <div class="button-group">
+            <button class="button primary" id="btn-ask-feedback">
+              Ask Feedback
+            </button>
+          </div>
+          <div id="feedback-message" class="hidden"></div>
+        </div>
+
+        <!-- Music App -->
+        <div id="app-music" class="app-screen hidden">
+          <h2>Music</h2>
+          <p>Music app coming soon...</p>
+        </div>
+
+        <!-- Pomodoro App -->
+        <div id="app-pomodoro" class="app-screen hidden">
+          <h2>Pomodoro</h2>
+          <div class="button-group">
+            <button class="button secondary" id="btn-pomodoro-25">
+              Focus (25m)
+            </button>
+            <button class="button secondary" id="btn-pomodoro-5">
+              Break (5m)
+            </button>
+          </div>
+          <div id="pomodoro-section" class="hidden">
+            <div class="pomodoro-timer">
+              <div class="timer-display" id="timer">25:00</div>
+              <button class="button secondary" id="btn-stop-timer">
+                Stop Timer
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Games App -->
+        <div id="app-profile" class="app-screen hidden">
+          <h2>Games</h2>
+
+          <!-- Game Selection Screen -->
+          <div id="game-selection-screen">
+            <p class="game-description">Choose a game to play!</p>
+            <button
+              id="play-catchpixel-btn"
+              class="button primary"
+              style="margin-top: 16px">
+              🎯 Catch the Pixel
+            </button>
+          </div>
+
+          <!-- Catch the Pixel Game Screen -->
+          <div id="catch-pixel-screen" class="hidden app-screen-scrollable">
+            <div class="game-header">
+              <h3>Catch the Pixel 🎯</h3>
+              <p class="game-instruction">
+                Click the moving pixels on the canvas before time runs out!
+              </p>
+            </div>
+
+            <!-- Game Not Started -->
+            <div id="catchpixel-not-started">
+              <div class="level-info">
+                <p>Level <span id="game-level">1</span> of 3</p>
+                <p class="level-details">
+                  Catch <span id="pixels-to-catch">1</span>
+                  <span id="pixel-word">pixel</span>
+                  in <span id="time-limit">20</span> seconds
+                </p>
+              </div>
+              <button id="start-catchpixel-btn" class="button primary">
+                Start Level <span id="start-level-num">1</span>
+              </button>
+              <div class="high-score-display">
+                <p>Best Score: <span id="catchpixel-high-score">0</span></p>
+              </div>
+            </div>
+
+            <!-- Game In Progress -->
+            <div id="catchpixel-in-progress" class="hidden">
+              <div class="level-header-progress">
+                <p>Level <span id="progress-level">1</span> of 3</p>
+              </div>
+              <div class="game-stats">
+                <div class="stat-item">
+                  <span class="stat-label">Time:</span>
+                  <span id="catchpixel-timer" class="stat-value">20</span>s
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Caught:</span>
+                  <span id="catchpixel-current-score" class="stat-value">0</span
+                  >/<span id="required-catches">1</span>
+                </div>
+              </div>
+              <p class="game-status-text">
+                Catch all the pixels to pass this level!
+              </p>
+            </div>
+
+            <!-- Level Complete Screen -->
+            <div id="catchpixel-level-complete" class="hidden">
+              <div class="game-result">
+                <p class="result-emoji">🎉</p>
+                <p id="level-complete-message" class="result-text">
+                  Level 1 Complete!
+                </p>
+                <div class="final-stats">
+                  <p>
+                    Pixels Caught: <span id="level-caught">1</span>/<span
+                      id="level-required"
+                      >1</span
+                    >
+                  </p>
+                </div>
+              </div>
+              <button
+                id="next-level-btn"
+                class="button primary"
+                style="margin-top: 16px">
+                Next Level →
+              </button>
+            </div>
+
+            <!-- Level Failed Screen -->
+            <div id="catchpixel-level-failed" class="hidden">
+              <div class="game-result">
+                <p class="result-emoji">⏰</p>
+                <p id="level-failed-message" class="result-text">Time's Up!</p>
+                <div class="final-stats">
+                  <p>
+                    You caught: <span id="failed-caught">0</span>/<span
+                      id="failed-required"
+                      >1</span
+                    >
+                    pixels
+                  </p>
+                </div>
+              </div>
+              <button
+                id="retry-level-btn"
+                class="button primary"
+                style="margin-top: 16px">
+                Try Again
+              </button>
+            </div>
+
+            <!-- Game Complete Screen -->
+            <div id="catchpixel-complete" class="hidden">
+              <div class="game-result">
+                <p class="result-emoji">🏆</p>
+                <p id="complete-message" class="result-text">
+                  YOU ARE A PIXEL MASTER!
+                </p>
+                <div class="final-stats">
+                  <p>Total Score: <span id="total-score">0</span></p>
+                  <p id="new-high-score-msg" class="hidden">
+                    🌟 New Best Score! 🌟
+                  </p>
+                </div>
+              </div>
+              <button
+                id="play-again-catchpixel-btn"
+                class="button primary"
+                style="margin-top: 16px">
+                Play Again
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tasks App -->
+        <div id="app-tasks" class="app-screen hidden">
+          <div class="tasks-header">
+            <h2>My Tasks</h2>
+            <button
+              id="delete-all-tasks-btn"
+              class="delete-all-btn hidden"
+              title="Delete all tasks">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </div>
+          <div id="task-list" class="task-list"></div>
+          <div class="task-input-container">
+            <textarea
+              id="new-task-input"
+              placeholder="Add a new task..."
+              class="new-task-input"
+              rows="1"
+              maxlength="80"></textarea>
+            <button id="add-task-btn" class="add-task-btn">＋</button>
+          </div>
+        </div>
+
+        <!-- Delete All Tasks Confirmation Bottom Sheet -->
+        <div id="delete-all-tasks-bottomsheet" class="bottomsheet hidden">
+          <div class="bottomsheet-overlay"></div>
+          <div class="bottomsheet-content">
+            <div class="bottomsheet-header">
+              <h3>Delete All Tasks?</h3>
+            </div>
+            <div class="bottomsheet-body">
+              <p>
+                Are you sure you want to delete all tasks? This action cannot be
+                undone.
+              </p>
+            </div>
+            <div class="bottomsheet-actions">
+              <button id="cancel-delete-all-btn" class="button secondary">
+                Cancel
+              </button>
+              <button id="confirm-delete-all-btn" class="button danger">
+                Delete All
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settings App -->
+        <div id="app-settings" class="app-screen hidden">
+          <h2>Settings</h2>
+          <div class="settings-container">
+            <!-- Cat Name Row -->
+            <div class="settings-row" id="cat-name-row">
+              <span class="settings-label">Cat Name</span>
+              <span class="settings-value" id="cat-name-value">Loading...</span>
+            </div>
+
+            <!-- Cat Visibility Toggle -->
+            <div class="settings-row">
+              <span class="settings-label">Show Cat on Canvas</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="cat-visibility-toggle" checked />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <!-- Auto-Pause Toggle -->
+            <div class="settings-row">
+              <div class="settings-label-with-icon">
+                <span class="settings-label">Pause Cat During Selection</span>
+                <span class="material-symbols-outlined settings-info-icon"
+                  >help_outline</span
+                >
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="auto-pause-toggle" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Bottom Sheet for Cat Name Update (inside settings app) -->
+          <div id="cat-name-bottomsheet" class="bottomsheet hidden">
+            <div class="bottomsheet-overlay"></div>
+            <div class="bottomsheet-content">
+              <div class="bottomsheet-header">
+                <h3>Update cat name</h3>
+                <p class="bottomsheet-info">
+                  You can change cat name once a month
+                </p>
+              </div>
+              <div class="bottomsheet-body">
+                <input
+                  type="text"
+                  id="cat-name-input-bottomsheet"
+                  class="cat-name-input"
+                  placeholder="Enter new cat name"
+                  maxlength="20" />
+              </div>
+              <div class="bottomsheet-footer">
+                <button class="btn-update-cat-name">Update Name</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Sheet for Auto-Pause Info (inside settings app) -->
+          <div id="auto-pause-info-bottomsheet" class="bottomsheet hidden">
+            <div class="bottomsheet-overlay"></div>
+            <div class="bottomsheet-content">
+              <div class="bottomsheet-header">
+                <h3>About Selection Pausing</h3>
+              </div>
+              <div class="bottomsheet-body">
+                <p class="bottomsheet-section-title">What does this do?</p>
+                <p class="bottomsheet-text">
+                  When you select frames or assets on your canvas, your cat will
+                  automatically pause moving and animating. This keeps your
+                  selection border stable and prevents flickering while you
+                  work.
+                </p>
+
+                <p class="bottomsheet-section-title">Why is this needed?</p>
+                <p class="bottomsheet-text">
+                  Cat animates using sprite position updates that trigger
+                  Figma's internal refresh events. When your selection is
+                  active, these refresh events cause the selection border to
+                  flicker. Pausing cat eliminates this distraction.
+                </p>
+
+                <p class="bottomsheet-section-title">Can I enable this?</p>
+                <p class="bottomsheet-text">
+                  Yes! By default, this feature is off so cat moves and animates
+                  while you select frames. But you can turn it on in Settings if
+                  you'd prefer a stable selection border. The choice is yours.
+                </p>
+              </div>
+              <div class="bottomsheet-footer">
+                <button class="btn-close-auto-pause-info">Got it</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Back Button (iPhone style) -->
+    <div class="back-button-wrapper">
+      <button class="back-button" id="btn-back">
+        <img
+          src="https://ameo-production.up.railway.app/btn-main.svg"
+          alt="Back" />
+      </button>
+    </div>
+
+    <script>
+      // ============================================
+      // CONFIGURATION - Set to false to bypass name input for testing
+      // ============================================
+      const REQUIRE_CAT_NAME = false; // Only require on first login - auto-load saved cat after
+
+      // UI State
+      let catInitialized = false;
+      let currentTimer = null;
+      let timerDuration = 0;
+      let timerStartTime = 0;
+      let pomodoroCompleted = false; // Track if completion message has been shown
+      let networkInfo = {
+        online: navigator.onLine,
+        type: "unknown",
+        effectiveType: "unknown",
+        downlink: 0,
+        rtt: 0,
+      };
+
+      // DOM Elements
+      const catNameInput = document.getElementById("cat-name-input");
+      const btnCreateCat = document.getElementById("btn-create-cat");
+      const setupScreen = document.getElementById("setup-screen");
+      const mainScreen = document.getElementById("main-screen");
+      // Activity buttons - will use event delegation instead
+      // const btnDance = document.getElementById("btn-dance");
+      // const btnSleepToggle = document.getElementById("btn-sleep-toggle");
+      const btnAskFeedback = document.getElementById("btn-ask-feedback");
+      const btnPomodoro25 = document.getElementById("btn-pomodoro-25");
+      const btnPomodoro5 = document.getElementById("btn-pomodoro-5");
+      const btnStopTimer = document.getElementById("btn-stop-timer");
+      const btnBack = document.getElementById("btn-back");
+      const messageContainer = document.getElementById("message-container");
+      const timerDisplay = document.getElementById("timer");
+      const pomodoroSection = document.getElementById("pomodoro-section");
+      const headerCountdown = document.getElementById("header-countdown");
+      const headerCountdownText = document.getElementById(
+        "header-countdown-text"
+      );
+      const batteryIndicator = document.querySelector(".battery-indicator");
+      const headerTaskCounter = document.getElementById("header-task-counter");
+      const headerTaskCounterText = document.getElementById(
+        "header-task-counter-text"
+      );
+      const homeScreen = document.getElementById("home-screen");
+      const container = document.querySelector(".container");
+      const appButtons = document.querySelectorAll(".app-button");
+      let currentApp = null;
+
+      // Function to manage battery visibility based on header element visibility
+      function updateBatteryVisibility() {
+        const countdownVisible = !headerCountdown.classList.contains("hidden");
+        const taskCounterVisible =
+          !headerTaskCounter.classList.contains("hidden");
+
+        // Hide battery when both countdown and task counter are visible
+        if (countdownVisible && taskCounterVisible) {
+          batteryIndicator.classList.add("hidden");
+        } else {
+          batteryIndicator.classList.remove("hidden");
+        }
+      }
+
+      // App navigation
+      appButtons.forEach((button) => {
+        button.addEventListener("mousedown", () => {
+          button.classList.add("active");
+        });
+
+        button.addEventListener("mouseup", () => {
+          button.classList.remove("active");
+        });
+
+        button.addEventListener("mouseleave", () => {
+          button.classList.remove("active");
+        });
+
+        button.addEventListener("click", () => {
+          const appName = button.dataset.app;
+          openApp(appName);
+        });
+      });
+
+      // Create Cat
+      btnCreateCat.addEventListener("click", () => {
+        const catName = catNameInput.value.trim();
+
+        // Validate cat name is provided
+        if (!catName) {
+          showMessage("Please enter a cat name!", "error");
+          catNameInput.focus();
+          return;
+        }
+
+        // Validate cat name format
+        if (!/^[a-zA-Z0-9]{1,10}$/.test(catName)) {
+          showMessage(
+            "Invalid name! Use 1-10 alphanumeric characters (letters and numbers only).",
+            "error"
+          );
+          catNameInput.focus();
+          return;
+        }
+        // Set cat as initialized immediately
+        catInitialized = true;
+        // Immediately transition to home screen
+        setupScreen.classList.add("hidden");
+        homeScreen.classList.remove("hidden");
+        // Enable action buttons (feedback still uses direct ID reference)
+        btnAskFeedback.disabled = false;
+        // Save cat name using Figma's clientStorage
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "save-cat-name",
+              payload: { catName },
+            },
+          },
+          "*"
+        );
+        parent.postMessage(
+          { pluginMessage: { type: "init-cat", payload: { catName } } },
+          "*"
+        );
+      });
+
+      // Actions - moved to activity button event delegation below
+
+      // Activity buttons event delegation
+      let isCatSleeping = false;
+
+      document.addEventListener("click", (e) => {
+        const activityBtn = e.target.closest(".activity-button");
+        if (!activityBtn || !catInitialized) return;
+
+        const activity = activityBtn.dataset.activity;
+
+        if (activity === "dance") {
+          console.log("Dance button clicked, catInitialized:", catInitialized);
+          parent.postMessage({ pluginMessage: { type: "dance" } }, "*");
+        } else if (activity === "sleep") {
+          console.log("Sleep button clicked, catInitialized:", catInitialized);
+
+          const sleepEmoji = document.getElementById("sleep-emoji");
+          const sleepLabel = document.getElementById("sleep-label");
+
+          if (isCatSleeping) {
+            // Currently sleeping, so wake up
+            parent.postMessage({ pluginMessage: { type: "wake-up" } }, "*");
+            sleepEmoji.textContent = "😴";
+            sleepLabel.textContent = "Sleep";
+            isCatSleeping = false;
+          } else {
+            // Currently awake, so sleep
+            parent.postMessage({ pluginMessage: { type: "sleep" } }, "*");
+            sleepEmoji.textContent = "🥱";
+            sleepLabel.textContent = "Wake";
+            isCatSleeping = true;
+          }
+        }
+      });
+
+      // Feedback
+      btnAskFeedback.addEventListener("click", async () => {
+        console.log("Feedback button clicked, catInitialized:", catInitialized);
+        try {
+          // Ask the plugin to get selected frames (UI doesn't have direct access)
+          parent.postMessage(
+            {
+              pluginMessage: {
+                type: "get-selected-frames",
+              },
+            },
+            "*"
+          );
+        } catch (error) {
+          console.error("Error requesting frames:", error);
+          showMessage("Error: Unable to request feedback", "error");
+        }
+      });
+
+      // Pomodoro
+      btnPomodoro25.addEventListener("click", () => {
+        startPomodoro(25 * 60);
+      });
+
+      btnPomodoro5.addEventListener("click", () => {
+        startPomodoro(5 * 60);
+      });
+
+      btnStopTimer.addEventListener("click", stopTimer);
+
+      // Header countdown click - navigate to Pomodoro page
+      headerCountdown.addEventListener("click", () => {
+        if (currentTimer) {
+          // If timer is running, open Pomodoro page
+          openApp("pomodoro");
+        }
+      });
+
+      // ============================================
+      // SETTINGS PAGE EVENT LISTENERS
+      // ============================================
+
+      // Get DOM elements for settings
+      const catNameRow = document.getElementById("cat-name-row");
+      const catNameValue = document.getElementById("cat-name-value");
+      const catNameBottomsheet = document.getElementById(
+        "cat-name-bottomsheet"
+      );
+      const bottomsheetOverlay = catNameBottomsheet.querySelector(
+        ".bottomsheet-overlay"
+      );
+      const catNameInputUpdate = document.getElementById(
+        "cat-name-input-bottomsheet"
+      );
+      const btnUpdateCatName = document.querySelector(".btn-update-cat-name");
+      const catVisibilityToggle = document.getElementById(
+        "cat-visibility-toggle"
+      );
+
+      // Load and display current cat name and visibility state
+      async function loadSettingsUI() {
+        try {
+          // Load auto-pause preference from localStorage
+          loadAutoPausePreference();
+          // Request current settings from main plugin
+          parent.postMessage({ pluginMessage: { type: "get-settings" } }, "*");
+        } catch (error) {
+          console.error("🔵 UI: Error loading settings:", error);
+        }
+      }
+
+      // Cat Name Row Click - Open Bottom Sheet
+      catNameRow.addEventListener("click", () => {
+        catNameBottomsheet.classList.remove("hidden");
+        // Reset scroll position to top
+        const catNameBody =
+          catNameBottomsheet.querySelector(".bottomsheet-body");
+        if (catNameBody) {
+          catNameBody.scrollTop = 0;
+        }
+        // Pre-fill input with current cat name
+        catNameInputUpdate.value = catNameValue.textContent;
+        catNameInputUpdate.focus();
+      });
+
+      // Bottom Sheet Overlay Click - Close Bottom Sheet
+      bottomsheetOverlay.addEventListener("click", () => {
+        catNameBottomsheet.classList.add("hidden");
+      });
+
+      // Update Cat Name Button Click
+      // Handle cat name update
+      async function handleUpdateCatName() {
+        const newCatName = catNameInputUpdate.value.trim();
+
+        if (!newCatName) {
+          showMessage("Please enter a cat name!", "error");
+          return;
+        }
+
+        if (!/^[a-zA-Z0-9]{1,20}$/.test(newCatName)) {
+          showMessage(
+            "Invalid name! Use 1-20 alphanumeric characters.",
+            "error"
+          );
+          return;
+        }
+
+        try {
+          // Send request to update cat name to main plugin
+          parent.postMessage(
+            {
+              pluginMessage: {
+                type: "update-cat-name",
+                payload: { newCatName },
+              },
+            },
+            "*"
+          );
+
+          // Listen for response
+          window.addEventListener("message", handleUpdateNameResponse);
+        } catch (error) {
+          console.error("Error updating cat name:", error);
+          showMessage("Failed to update cat name", "error");
+        }
+      }
+
+      // Button click handler
+      btnUpdateCatName.addEventListener("click", handleUpdateCatName);
+
+      // Enter key handler on input field (works with both "Enter" and "Return" keys)
+      catNameInputUpdate.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === "Return") {
+          e.preventDefault();
+          handleUpdateCatName();
+        }
+      });
+
+      // Handle update cat name response
+      function handleUpdateNameResponse(event) {
+        const msg = event.data.pluginMessage;
+        if (!msg) return;
+
+        if (msg.type === "cat-name-updated") {
+          window.removeEventListener("message", handleUpdateNameResponse);
+
+          if (msg.payload.success) {
+            // Update UI
+            catNameValue.textContent = msg.payload.newCatName;
+            catNameBottomsheet.classList.add("hidden");
+            showMessage(
+              `Cat name updated to ${msg.payload.newCatName}! 🎉`,
+              "success"
+            );
+          } else {
+            // Show error message
+            showMessage(
+              msg.payload.error ||
+                "Failed to update cat name. Try again in 30 days.",
+              "error"
+            );
+          }
+        }
+      }
+
+      // Cat Visibility Toggle Change
+      catVisibilityToggle.addEventListener("change", (e) => {
+        const isVisible = e.target.checked;
+
+        // Send toggle state to main plugin
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "toggle-cat-visibility",
+              payload: { visible: isVisible },
+            },
+          },
+          "*"
+        );
+
+        if (isVisible) {
+          showMessage("Cat is now visible on canvas 😺", "success");
+        } else {
+          showMessage("Cat hidden from canvas. Tap to show again.", "info");
+        }
+      });
+
+      // ============================================
+      // AUTO-PAUSE TOGGLE HANDLERS
+      // ============================================
+
+      // Get DOM elements for auto-pause
+      const autoPauseToggle = document.getElementById("auto-pause-toggle");
+      const autoPauseInfoIcon = document.querySelector(".settings-info-icon");
+      const autoPauseInfoBottomsheet = document.getElementById(
+        "auto-pause-info-bottomsheet"
+      );
+      const autoPauseInfoOverlay = autoPauseInfoBottomsheet
+        ? autoPauseInfoBottomsheet.querySelector(".bottomsheet-overlay")
+        : null;
+      const btnCloseAutoPauseInfo = document.querySelector(
+        ".btn-close-auto-pause-info"
+      );
+
+      // Auto-Pause Toggle Change
+      if (autoPauseToggle) {
+        autoPauseToggle.addEventListener("change", (e) => {
+          const isEnabled = e.target.checked;
+
+          // Send toggle state to main plugin for saving via clientStorage
+          parent.postMessage(
+            {
+              pluginMessage: {
+                type: "toggle-auto-pause",
+                payload: { enabled: isEnabled },
+              },
+            },
+            "*"
+          );
+
+          if (isEnabled) {
+            showMessage(
+              "Auto-pause enabled. Cat will pause during selection.",
+              "success"
+            );
+          } else {
+            showMessage("Auto-pause disabled. Cat will move freely.", "info");
+          }
+        });
+      }
+
+      // Info Icon Click - Open Bottom Sheet
+      if (autoPauseInfoIcon) {
+        autoPauseInfoIcon.addEventListener("click", () => {
+          autoPauseInfoBottomsheet.classList.remove("hidden");
+          // Reset scroll position to top
+          const autoPauseBody =
+            autoPauseInfoBottomsheet.querySelector(".bottomsheet-body");
+          if (autoPauseBody) {
+            autoPauseBody.scrollTop = 0;
+          }
+        });
+      }
+
+      // Bottom Sheet Overlay Click - Close Bottom Sheet
+      if (autoPauseInfoOverlay) {
+        autoPauseInfoOverlay.addEventListener("click", () => {
+          autoPauseInfoBottomsheet.classList.add("hidden");
+        });
+      }
+
+      // Close Button Click
+      if (btnCloseAutoPauseInfo) {
+        btnCloseAutoPauseInfo.addEventListener("click", () => {
+          autoPauseInfoBottomsheet.classList.add("hidden");
+        });
+      }
+
+      // Load auto-pause preference on settings load
+      function loadAutoPausePreference() {
+        // Request auto-pause preference from plugin (uses clientStorage)
+        // Use setTimeout to ensure message handler is ready
+        setTimeout(() => {
+          parent.postMessage(
+            {
+              pluginMessage: {
+                type: "get-auto-pause-preference",
+              },
+            },
+            "*"
+          );
+        }, 100);
+      }
+
+      // App Navigation Functions
+      function openApp(appName) {
+        // Hide home screen and all app screens
+        homeScreen.classList.add("hidden");
+        document.querySelectorAll(".app-screen").forEach((screen) => {
+          screen.classList.add("hidden");
+        });
+
+        // Show the selected app
+        const appScreen = document.getElementById(`app-${appName}`);
+        if (appScreen) {
+          appScreen.classList.remove("hidden");
+        }
+
+        // Add app-open class to container for styling
+        container.classList.add("app-open");
+
+        // Handle header visibility based on which app is opening
+        if (appName === "pomodoro" && currentTimer) {
+          // Hide countdown when on Pomodoro page (timer still running)
+          headerCountdown.classList.add("hidden");
+          // Show task counter if tasks exist
+          if (tasksData.length > 0) {
+            headerTaskCounter.classList.remove("hidden");
+          } else {
+            headerTaskCounter.classList.add("hidden");
+          }
+        } else if (appName === "tasks") {
+          // When opening tasks app, always hide task counter
+          headerTaskCounter.classList.add("hidden");
+          // Show countdown if timer is running (user should see timer in header)
+          if (currentTimer) {
+            headerCountdown.classList.remove("hidden");
+          } else {
+            headerCountdown.classList.add("hidden");
+          }
+        } else {
+          // For other apps (messages, activities, feedback, music, settings), show both if available
+          if (currentTimer) {
+            headerCountdown.classList.remove("hidden");
+          } else {
+            headerCountdown.classList.add("hidden");
+          }
+          if (tasksData.length > 0) {
+            headerTaskCounter.classList.remove("hidden");
+          } else {
+            headerTaskCounter.classList.add("hidden");
+          }
+        }
+
+        // Update battery visibility based on new header state
+        updateBatteryVisibility();
+
+        // Load settings when settings app opens
+        if (appName === "settings") {
+          loadSettingsUI();
+        }
+
+        currentApp = appName;
+      }
+
+      function goHome() {
+        // Hide all app screens
+        document.querySelectorAll(".app-screen").forEach((screen) => {
+          screen.classList.add("hidden");
+        });
+
+        // Show home screen
+        homeScreen.classList.remove("hidden");
+
+        // Remove app-open class from container
+        container.classList.remove("app-open");
+
+        // Show header countdown if timer is running (leaving Pomodoro page)
+        if (currentTimer) {
+          headerCountdown.classList.remove("hidden");
+        }
+
+        // Show header task counter if tasks exist (leaving tasks page)
+        if (tasksData.length > 0) {
+          headerTaskCounter.classList.remove("hidden");
+        }
+
+        // Update battery visibility based on new header state
+        updateBatteryVisibility();
+
+        currentApp = null;
+      }
+
+      // Back Button with click effect
+      btnBack.addEventListener("mousedown", () => {
+        btnBack.classList.add("active");
+      });
+
+      btnBack.addEventListener("mouseup", () => {
+        btnBack.classList.remove("active");
+      });
+
+      btnBack.addEventListener("mouseleave", () => {
+        btnBack.classList.remove("active");
+      });
+
+      btnBack.addEventListener("click", () => {
+        goHome();
+      });
+
+      // Message from plugin
+      window.onmessage = (event) => {
+        const msg = event.data.pluginMessage;
+        if (!msg) return;
+
+        switch (msg.type) {
+          case "cinematic-intro-start":
+            // Disable all app buttons during cinematic intro animation
+            appButtons.forEach((button) => {
+              button.disabled = true;
+            });
+            break;
+
+          case "cinematic-intro-end":
+            // Re-enable all app buttons after cinematic intro animation
+            appButtons.forEach((button) => {
+              button.disabled = false;
+            });
+            break;
+
+          case "settings-loaded":
+            // Handle settings load response
+            const { catName: settingsCatName, catVisible } = msg.payload;
+            const catNameEl = document.getElementById("cat-name-value");
+            if (settingsCatName && catNameEl) {
+              catNameEl.textContent = settingsCatName;
+            }
+            const catVisEl = document.getElementById("cat-visibility-toggle");
+            if (catVisible !== undefined && catVisEl) {
+              catVisEl.checked = catVisible;
+            }
+            break;
+
+          case "auto-pause-preference":
+            // Handle auto-pause preference from plugin (uses clientStorage)
+            const { enabled: autoPauseEnabled } = msg.payload;
+            if (autoPauseToggle) {
+              autoPauseToggle.checked = autoPauseEnabled;
+            }
+            break;
+
+          case "cat-name-loaded":
+            // Auto-initialize with loaded cat name
+            parent.postMessage(
+              {
+                pluginMessage: {
+                  type: "init-cat",
+                  payload: { catName: msg.payload.catName },
+                },
+              },
+              "*"
+            );
+            break;
+
+          case "cat-initialized":
+            catInitialized = true;
+            const catName = msg.payload.name;
+            catNameInput.value = catName;
+            // Set currentCatName for messaging system
+            currentCatName = catName;
+            // Cat name display removed, no longer needed in app-based UI
+            updateUI();
+            showMessage(`${catName} is ready to play!`, "success");
+            // Initialize messaging with the cat name (fire and forget)
+            registerUserAndLoadChats();
+            break;
+
+          case "feedback-received":
+            showMessage("Feedback added as comment!", "success");
+            break;
+
+          case "feedback-error":
+            showMessage(msg.payload.message, "error");
+            break;
+
+          case "pomodoro-started":
+            pomodoroSection.classList.remove("hidden");
+            break;
+
+          case "error":
+            showMessage(msg.payload.message, "error");
+            break;
+
+          case "game-started":
+          case "game-score-update":
+          case "game-tick":
+          case "level-complete":
+          case "level-failed":
+          case "game-complete":
+            // Handle all game-related messages
+            handleGameMessage(msg);
+            break;
+        }
+      };
+
+      // Utilities
+      function updateUI() {
+        if (catInitialized) {
+          setupScreen.classList.add("hidden");
+          homeScreen.classList.remove("hidden");
+          btnAskFeedback.disabled = false;
+        } else {
+          // Show setup screen if REQUIRE_CAT_NAME, otherwise show home screen
+          if (REQUIRE_CAT_NAME) {
+            setupScreen.classList.remove("hidden");
+            homeScreen.classList.add("hidden");
+          } else {
+            setupScreen.classList.add("hidden");
+            homeScreen.classList.remove("hidden");
+          }
+          btnAskFeedback.disabled = true;
+        }
+      }
+
+      function showMessage(text, type) {
+        const msg = document.createElement("div");
+        msg.className = `message ${type}`;
+        msg.textContent = text;
+        messageContainer.innerHTML = "";
+        messageContainer.appendChild(msg);
+        setTimeout(() => msg.remove(), 4000);
+      }
+
+      function startPomodoro(seconds) {
+        // Stop any existing timer before starting a new one
+        if (currentTimer) {
+          clearInterval(currentTimer);
+          currentTimer = null;
+        }
+
+        // Reset completion flag for new timer
+        pomodoroCompleted = false;
+
+        timerDuration = seconds;
+        timerStartTime = Date.now();
+
+        // Ensure Pomodoro app is open first
+        openApp("pomodoro");
+
+        pomodoroSection.classList.remove("hidden");
+        // Header countdown will only show when user navigates away from Pomodoro page
+        headerCountdown.classList.add("hidden");
+        updateTimerDisplay();
+        currentTimer = setInterval(updateTimerDisplay, 1000);
+        updateBatteryVisibility();
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "start-pomodoro",
+              payload: { duration: seconds },
+            },
+          },
+          "*"
+        );
+      }
+
+      function stopTimer() {
+        if (currentTimer) {
+          clearInterval(currentTimer);
+          currentTimer = null;
+        }
+        pomodoroCompleted = false; // Reset flag when stopping
+        pomodoroSection.classList.add("hidden");
+        headerCountdown.classList.add("hidden");
+        updateBatteryVisibility();
+      }
+
+      function updateTimerDisplay() {
+        const elapsed = Math.floor((Date.now() - timerStartTime) / 1000);
+        const remaining = Math.max(0, timerDuration - elapsed);
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
+        const timeString = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+        timerDisplay.textContent = timeString;
+
+        // Update header countdown text
+        headerCountdownText.textContent = timeString;
+
+        // Show completion message only once when timer reaches 0
+        if (remaining === 0 && !pomodoroCompleted) {
+          pomodoroCompleted = true;
+          stopTimer();
+          showMessage("Pomodoro complete! Good work!", "success");
+        }
+      }
+
+      // ============================================
+      // NETWORK SIGNAL INDICATOR
+      // ============================================
+
+      function updateSignalStrength() {
+        const signalBars = document.getElementById("signal-bars");
+        const signalText = document.getElementById("signal-text");
+        const bars = signalBars.querySelectorAll(".signal-bar");
+
+        // Check if online
+        if (!navigator.onLine) {
+          // No internet connection - show "No Service"
+          signalBars.style.display = "none";
+          signalText.style.display = "block";
+          signalText.textContent = "No Service";
+          return;
+        }
+
+        // Online - show signal bars
+        signalBars.style.display = "flex";
+        signalText.style.display = "none";
+
+        // Get connection info (Network Information API)
+        const connection =
+          navigator.connection ||
+          navigator.mozConnection ||
+          navigator.webkitConnection;
+
+        let activeBars = 4; // Default to full signal
+
+        if (connection) {
+          const effectiveType = connection.effectiveType;
+          const downlink = connection.downlink; // Mbps
+          const rtt = connection.rtt; // Round trip time in ms
+
+          // Determine signal strength based on connection quality
+          if (effectiveType === "slow-2g" || downlink < 0.1 || rtt > 2000) {
+            activeBars = 1; // Very weak signal
+          } else if (effectiveType === "2g" || downlink < 0.5 || rtt > 1000) {
+            activeBars = 2; // Weak signal
+          } else if (effectiveType === "3g" || downlink < 2 || rtt > 500) {
+            activeBars = 3; // Good signal
+          } else {
+            activeBars = 4; // Excellent signal (4g, 5g, or fast wifi)
+          }
+        }
+
+        // Update bar visibility
+        bars.forEach((bar, index) => {
+          if (index < activeBars) {
+            bar.classList.add("active");
+          } else {
+            bar.classList.remove("active");
+          }
+        });
+      }
+
+      // Listen for online/offline events
+      window.addEventListener("online", updateSignalStrength);
+      window.addEventListener("offline", updateSignalStrength);
+
+      // Listen for connection changes (if supported)
+      if (navigator.connection) {
+        navigator.connection.addEventListener("change", updateSignalStrength);
+      }
+
+      // Update signal strength every 5 seconds
+      setInterval(updateSignalStrength, 5000);
+
+      // Initial update
+      updateSignalStrength();
+
+      // ============================================
+      // TIME DISPLAY (iPhone style)
+      // ============================================
+
+      function updateTimeDisplay() {
+        const timeDisplay = document.getElementById("time-display");
+        const now = new Date();
+
+        // Get hours and minutes
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+
+        // Format with leading zeros for 24-hour format
+        const hoursStr = hours < 10 ? "0" + hours : hours;
+        const minutesStr = minutes < 10 ? "0" + minutes : minutes;
+
+        // Update display in 24-hour format (e.g., "09:41" or "23:30")
+        timeDisplay.textContent = `${hoursStr}:${minutesStr}`;
+      }
+
+      // Update time every second
+      setInterval(updateTimeDisplay, 1000);
+
+      // Initial update
+      updateTimeDisplay();
+
+      // ============================================
+      // BATTERY INDICATOR (iPhone style)
+      // ============================================
+
+      function updateBatteryStatus() {
+        try {
+          const batteryLevel = document.getElementById("battery-level");
+          const batteryPercentage =
+            document.getElementById("battery-percentage");
+
+          // Try 1: Use Battery Status API if available (works on some devices)
+          if (navigator.getBattery) {
+            navigator.getBattery().then((battery) => {
+              function updateBatteryUI() {
+                const level = Math.round(battery.level * 100);
+                batteryPercentage.textContent = `${level}%`;
+                batteryLevel.style.width = `${level}%`;
+                batteryLevel.classList.remove("low", "charging");
+
+                if (battery.charging) {
+                  batteryLevel.classList.add("charging");
+                } else if (level <= 20) {
+                  batteryLevel.classList.add("low");
+                }
+              }
+
+              updateBatteryUI();
+              battery.addEventListener("levelchange", updateBatteryUI);
+              battery.addEventListener("chargingchange", updateBatteryUI);
+            });
+          }
+          // Try 2: Use Gamepad API to detect device battery info (skip if not available)
+          else if (navigator.getGamepads) {
+            const gamepads = navigator.getGamepads();
+            let batteryFound = false;
+
+            for (let i = 0; i < gamepads.length; i++) {
+              const gamepad = gamepads[i];
+              if (gamepad && gamepad.battery) {
+                const level = Math.round(gamepad.battery.level * 100);
+                batteryPercentage.textContent = `${level}%`;
+                batteryLevel.style.width = `${level}%`;
+                batteryLevel.classList.remove("low", "charging");
+                batteryFound = true;
+                console.log("Battery info from Gamepad API:", level);
+                return; // Success, exit early
+              }
+            }
+
+            // Gamepad API exists but no battery found - fall through to next option
+          }
+          // Try 3: Check if running on mobile device and estimate battery
+          else if (
+            /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+          ) {
+            // Mobile device detected - try to infer from device memory and screen
+            let estimatedBattery = 75;
+
+            // Adjust based on device memory (less memory = older device = lower battery estimate)
+            if (navigator.deviceMemory) {
+              if (navigator.deviceMemory <= 2) estimatedBattery = 60;
+              else if (navigator.deviceMemory <= 4) estimatedBattery = 75;
+              else estimatedBattery = 85;
+            }
+
+            batteryPercentage.textContent = `${estimatedBattery}%`;
+            batteryLevel.style.width = `${estimatedBattery}%`;
+            batteryLevel.classList.remove("low", "charging");
+
+            console.log(
+              "Mobile device detected, showing estimated battery level:",
+              estimatedBattery
+            );
+          }
+          // Fallback: Show reasonable demo level for desktop
+          else {
+            const demoLevel = 85;
+            batteryPercentage.textContent = `${demoLevel}%`;
+            batteryLevel.style.width = `${demoLevel}%`;
+            batteryLevel.classList.remove("low", "charging");
+
+            console.log("Desktop device detected, showing demo battery level");
+          }
+        } catch (error) {
+          console.warn(
+            "Battery detection failed, showing fallback level:",
+            error
+          );
+          // Final fallback: Show a reasonable demo level
+          const demoLevel = 80;
+          document.getElementById(
+            "battery-percentage"
+          ).textContent = `${demoLevel}%`;
+          document.getElementById(
+            "battery-level"
+          ).style.width = `${demoLevel}%`;
+        }
+      }
+
+      // Initial battery update
+      updateBatteryStatus();
+
+      // Initialize UI
+      updateUI();
+
+      // Auto-load saved cat if REQUIRE_CAT_NAME is false
+      if (!REQUIRE_CAT_NAME) {
+        // Request saved cat name from plugin via clientStorage
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "get-cat-name",
+            },
+          },
+          "*"
+        );
+      }
+
+      // ============================================
+      // MESSAGING SYSTEM
+      // ============================================
+
+      const API_BASE_URL =
+        "https://ameo-production.up.railway.app/api/messages";
+      let currentCatName = null;
+      let selectedConversationUser = null;
+      let messagePollingInterval = null;
+      let unreadNotificationSound = null;
+
+      // Messaging state
+      const messagingState = {
+        conversations: [],
+        currentConversation: null,
+        currentConversationId: null,
+        isPolling: false,
+      };
+
+      // Typing indicator state
+      let isCurrentlyTyping = false;
+      let typingTimeout = null;
+      let typingPollingInterval = null;
+      const TYPING_POLL_INTERVAL = 2000; // Poll every 2 seconds for typing status
+
+      // Pagination state for messages
+      let paginationState = {
+        currentOffset: 0,
+        pageSize: 50,
+        totalCount: 0,
+        hasMore: true,
+        isLoading: false,
+        isLoadingMore: false,
+      };
+      let paginationDebounceTimeout = null;
+
+      // DOM Elements for Messaging
+      const inviteInput = document.getElementById("invite-input");
+      const inviteBtn = document.getElementById("invite-btn");
+      const chatList = document.getElementById("chat-list");
+      const emptyState = document.getElementById("empty-state");
+      const messagesListView = document.getElementById("messages-list-view");
+      const messagesConversationView = document.getElementById(
+        "messages-conversation-view"
+      );
+      const convBackBtn = document.getElementById("conv-back-btn");
+      const convTitle = document.getElementById("conv-title");
+      const messagesContainer = document.getElementById("messages-container");
+      const messageInput = document.getElementById("message-input");
+      const sendBtn = document.getElementById("send-btn");
+
+      // ============================================
+      // CATCH THE PIXEL GAME HANDLERS
+      // ============================================
+
+      // Game state variables
+      let catchPixelGameActive = false;
+      let catchPixelScore = 0;
+      let catchPixelTimeLeft = 30;
+      let catchPixelHighScore = 0;
+
+      // Get game elements
+      const playCatchPixelBtn = document.getElementById("play-catchpixel-btn");
+      const gameSelectionScreen = document.getElementById(
+        "game-selection-screen"
+      );
+      const catchPixelScreen = document.getElementById("catch-pixel-screen");
+
+      const startCatchPixelBtn = document.getElementById(
+        "start-catchpixel-btn"
+      );
+      const playAgainCatchPixelBtn = document.getElementById(
+        "play-again-catchpixel-btn"
+      );
+      const nextLevelBtn = document.getElementById("next-level-btn");
+      const retryLevelBtn = document.getElementById("retry-level-btn");
+
+      const catchPixelNotStarted = document.getElementById(
+        "catchpixel-not-started"
+      );
+      const catchPixelInProgress = document.getElementById(
+        "catchpixel-in-progress"
+      );
+      const catchPixelLevelComplete = document.getElementById(
+        "catchpixel-level-complete"
+      );
+      const catchPixelLevelFailed = document.getElementById(
+        "catchpixel-level-failed"
+      );
+      const catchPixelComplete = document.getElementById("catchpixel-complete");
+
+      const catchPixelHighScoreDisplay = document.getElementById(
+        "catchpixel-high-score"
+      );
+      const catchPixelTimer = document.getElementById("catchpixel-timer");
+      const catchPixelCurrentScore = document.getElementById(
+        "catchpixel-current-score"
+      );
+
+      // Level config
+      const LEVEL_CONFIGS = {
+        1: { pixelCount: 1, duration: 20, colors: "pink" },
+        2: { pixelCount: 2, duration: 25, colors: "pink + orange" },
+        3: { pixelCount: 3, duration: 30, colors: "pink + orange + cyan" },
+      };
+
+      let currentGameLevel = 1;
+      let timerIntervalId = null;
+
+      // Load high score on init
+      function loadCatchPixelHighScore() {
+        // High score is stored via figma.clientStorage on plugin side
+        // It will be sent when game-started message arrives
+        // For now, just display the current value
+        if (catchPixelHighScoreDisplay) {
+          catchPixelHighScoreDisplay.textContent =
+            catchPixelHighScore.toString();
+        }
+      }
+
+      // Initialize high score display
+      if (catchPixelHighScoreDisplay) {
+        catchPixelHighScoreDisplay.textContent = "0";
+      }
+
+      // Show game screen helper
+      function showCatchPixelScreen(state, level = 1) {
+        // Hide all screens first
+        catchPixelNotStarted.classList.add("hidden");
+        catchPixelInProgress.classList.add("hidden");
+        catchPixelLevelComplete.classList.add("hidden");
+        catchPixelLevelFailed.classList.add("hidden");
+        catchPixelComplete.classList.add("hidden");
+
+        if (state === "not-started") {
+          // Update level info
+          document.getElementById("game-level").textContent = level;
+          document.getElementById("start-level-num").textContent = level;
+          const config = LEVEL_CONFIGS[level];
+          document.getElementById("pixels-to-catch").textContent =
+            config.pixelCount;
+          document.getElementById("pixel-word").textContent =
+            config.pixelCount === 1 ? "pixel" : "pixels";
+          document.getElementById("time-limit").textContent = config.duration;
+          catchPixelNotStarted.classList.remove("hidden");
+        } else if (state === "in-progress") {
+          document.getElementById("progress-level").textContent = level;
+          const config = LEVEL_CONFIGS[level];
+          document.getElementById("required-catches").textContent =
+            config.pixelCount;
+          catchPixelInProgress.classList.remove("hidden");
+        } else if (state === "level-complete") {
+          document.getElementById(
+            "level-complete-message"
+          ).textContent = `Level ${level} Complete!`;
+          catchPixelLevelComplete.classList.remove("hidden");
+        } else if (state === "level-failed") {
+          catchPixelLevelFailed.classList.remove("hidden");
+        } else if (state === "complete") {
+          catchPixelComplete.classList.remove("hidden");
+        }
+      }
+
+      // Start catch pixel level
+      function startCatchPixelLevel(level) {
+        currentGameLevel = level;
+        const config = LEVEL_CONFIGS[level];
+
+        if (!config) {
+          // Game complete - all levels done
+          showCatchPixelScreen("complete");
+          return;
+        }
+
+        catchPixelGameActive = true;
+        const initialTime = config.duration;
+
+        showCatchPixelScreen("in-progress", level);
+        document.getElementById("catchpixel-current-score").textContent = "0";
+        document.getElementById("catchpixel-timer").textContent =
+          initialTime.toString();
+
+        // Send message to plugin to start this level
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "start-catchpixel",
+              payload: { level: level },
+            },
+          },
+          "*"
+        );
+
+        // Clear old timer if exists
+        if (timerIntervalId) {
+          clearInterval(timerIntervalId);
+        }
+
+        // Timer countdown
+        let timeLeft = initialTime;
+        timerIntervalId = setInterval(() => {
+          timeLeft--;
+          document.getElementById("catchpixel-timer").textContent =
+            timeLeft.toString();
+
+          if (timeLeft <= 0) {
+            clearInterval(timerIntervalId);
+            catchPixelGameActive = false;
+            // Game end message will come from plugin
+          }
+        }, 1000);
+      }
+
+      // Handle game messages from plugin
+      function handleGameMessage(msg) {
+        if (msg.type === "game-started") {
+          catchPixelHighScore = msg.payload.highScore;
+          currentGameLevel = msg.payload.level;
+        } else if (msg.type === "game-score-update") {
+          const score = msg.payload.score;
+          const level = msg.payload.level;
+          document.getElementById("catchpixel-current-score").textContent =
+            score.toString();
+        } else if (msg.type === "game-tick") {
+          const timeLeft = msg.payload.timeLeft;
+          document.getElementById("catchpixel-timer").textContent =
+            timeLeft.toString();
+        } else if (msg.type === "level-complete") {
+          catchPixelGameActive = false;
+          if (timerIntervalId) clearInterval(timerIntervalId);
+          const level = msg.payload.currentLevel;
+          const score = msg.payload.levelScore;
+          const nextLevel = msg.payload.nextLevel;
+
+          document.getElementById("level-caught").textContent = score;
+          document.getElementById("level-required").textContent =
+            LEVEL_CONFIGS[level].pixelCount;
+          showCatchPixelScreen("level-complete", level);
+        } else if (msg.type === "level-failed") {
+          catchPixelGameActive = false;
+          if (timerIntervalId) clearInterval(timerIntervalId);
+          const level = msg.payload.currentLevel;
+          const caught = msg.payload.levelScore;
+          const required = msg.payload.required;
+
+          document.getElementById("failed-caught").textContent = caught;
+          document.getElementById("failed-required").textContent = required;
+          document.getElementById(
+            "level-failed-message"
+          ).textContent = `Time's Up! You caught ${caught}/${required} pixels.`;
+          showCatchPixelScreen("level-failed", level);
+        } else if (msg.type === "game-complete") {
+          catchPixelGameActive = false;
+          if (timerIntervalId) clearInterval(timerIntervalId);
+          const totalScore = msg.payload.totalScore;
+          const isNewHighScore = msg.payload.isNewHighScore;
+
+          document.getElementById("total-score").textContent = totalScore;
+          if (isNewHighScore) {
+            document
+              .getElementById("new-high-score-msg")
+              .classList.remove("hidden");
+          } else {
+            document
+              .getElementById("new-high-score-msg")
+              .classList.add("hidden");
+          }
+          showCatchPixelScreen("complete");
+          loadCatchPixelHighScore();
+        }
+      }
+
+      // ========== CATCH PIXEL EVENT LISTENERS ==========
+      // Play Catch the Pixel button
+      if (playCatchPixelBtn) {
+        playCatchPixelBtn.addEventListener("click", () => {
+          gameSelectionScreen.classList.add("hidden");
+          catchPixelScreen.classList.remove("hidden");
+          loadCatchPixelHighScore();
+          currentGameLevel = 1;
+          showCatchPixelScreen("not-started", 1);
+        });
+      }
+
+      // Start game button (Level 1)
+      if (startCatchPixelBtn) {
+        startCatchPixelBtn.addEventListener("click", () => {
+          if (!catInitialized) {
+            showMessage("Please create a cat first!", "error");
+            return;
+          }
+          startCatchPixelLevel(1);
+        });
+      }
+
+      // Next level button
+      if (nextLevelBtn) {
+        nextLevelBtn.addEventListener("click", () => {
+          if (!catInitialized) {
+            showMessage("Please create a cat first!", "error");
+            return;
+          }
+          currentGameLevel++;
+          startCatchPixelLevel(currentGameLevel);
+        });
+      }
+
+      // Retry level button
+      if (retryLevelBtn) {
+        retryLevelBtn.addEventListener("click", () => {
+          if (!catInitialized) {
+            showMessage("Please create a cat first!", "error");
+            return;
+          }
+          startCatchPixelLevel(currentGameLevel);
+        });
+      }
+
+      // Play again button
+      if (playAgainCatchPixelBtn) {
+        playAgainCatchPixelBtn.addEventListener("click", () => {
+          if (!catInitialized) {
+            showMessage("Please create a cat first!", "error");
+            return;
+          }
+          currentGameLevel = 1;
+          startCatchPixelLevel(1);
+        });
+      }
+
+      // Initialize messaging system when cat name is available
+      function initializeMessaging() {
+        // Only initialize messaging after cat is initialized
+        // Don't call get-cat-name here - it's already being called for plugin init
+        // The currentCatName will be set from the cat-name message event
+      }
+
+      // Setup message event listener for cat name
+      window.addEventListener("message", async (event) => {
+        const message = event.data.pluginMessage;
+        if (message && message.type === "cat-name") {
+          currentCatName = message.payload;
+          await registerUserAndLoadChats();
+        }
+      });
+
+      // Register user with backend and load conversations
+      async function registerUserAndLoadChats() {
+        if (!currentCatName) return;
+
+        try {
+          // Register or get user
+          const registerRes = await fetch(`${API_BASE_URL}/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cat_name: currentCatName }),
+          });
+
+          if (!registerRes.ok) throw new Error("Failed to register");
+
+          // Load conversations
+          await loadConversations();
+
+          // Start polling for new messages
+          startMessagePolling();
+        } catch (error) {
+          console.error("❌ Messaging init error:", error);
+          showMessage("Failed to initialize messaging", "error");
+        }
+      }
+
+      // Load all conversations for current user
+      async function loadConversations() {
+        if (!currentCatName) return;
+
+        try {
+          // Add timestamp to force fresh database query (cache buster)
+          const cacheBreaker = `?t=${Date.now()}`;
+          const response = await fetch(
+            `${API_BASE_URL}/list/${currentCatName}${cacheBreaker}`,
+            { cache: "no-store" } // Force fresh data, no caching
+          );
+          const data = await response.json();
+
+          if (!response.ok)
+            throw new Error(data.error || "Failed to load conversations");
+
+          messagingState.conversations = data.conversations || [];
+          console.log(
+            `✅ Loaded ${messagingState.conversations.length} conversations`
+          );
+          renderChatList();
+        } catch (error) {
+          console.error("❌ Load conversations error:", error);
+          // Show at least Ameo even if loading fails
+          messagingState.conversations = [];
+          renderChatList();
+        }
+      }
+
+      // Render chat list view
+      function renderChatList() {
+        chatList.innerHTML = "";
+
+        // Always show Ameo chat at the top
+        const ameoItem = document.createElement("div");
+        ameoItem.className = "chat-item ameo-chat-item";
+        ameoItem.innerHTML = `
+          <div class="chat-item-header">
+            <div style="flex: 1; min-width: 0;">
+              <div class="chat-item-name">🐱 Ameo</div>
+              <div class="chat-item-message">Chat with your design assistant</div>
+            </div>
+            <div style="display: flex; align-items: center;">
+              <span class="chat-item-time">Now</span>
+            </div>
+          </div>
+        `;
+        ameoItem.addEventListener("click", () => openConversation("Ameo"));
+        chatList.appendChild(ameoItem);
+
+        // Show other conversations
+        if (messagingState.conversations.length === 0) {
+          emptyState.style.display = "flex";
+          // Don't hide chatList anymore since Ameo is always there
+          return;
+        }
+
+        emptyState.style.display = "none";
+
+        messagingState.conversations.forEach((conv) => {
+          const chatItem = document.createElement("div");
+          chatItem.className = `chat-item ${
+            conv.unread_count > 0 ? "chat-item-unread" : ""
+          }`;
+          chatItem.innerHTML = `
+            <div class="chat-item-header">
+              <div style="flex: 1; min-width: 0;">
+                <div class="chat-item-name">${escapeHtml(
+                  conv.other_cat_name
+                )}</div>
+                <div class="chat-item-message">${escapeHtml(
+                  conv.last_message || "No messages yet"
+                )}</div>
+              </div>
+              <div style="display: flex; align-items: center;">
+                <span class="chat-item-time">${formatTime(
+                  conv.last_message_time
+                )}</span>
+                ${
+                  conv.unread_count > 0
+                    ? `<span class="unread-badge">${conv.unread_count}</span>`
+                    : ""
+                }
+              </div>
+            </div>
+          `;
+          chatItem.addEventListener("click", () =>
+            openConversation(conv.other_cat_name)
+          );
+          chatList.appendChild(chatItem);
+        });
+      }
+
+      // Open a conversation
+      async function openConversation(otherCatName) {
+        if (!currentCatName) return;
+
+        selectedConversationUser = otherCatName;
+        messagesListView.classList.add("hidden");
+        messagesConversationView.classList.remove("hidden");
+        convTitle.textContent = otherCatName;
+
+        await loadConversationMessages(otherCatName);
+      }
+
+      // Load messages for a conversation
+      async function loadConversationMessages(otherCatName) {
+        if (!currentCatName) return;
+
+        try {
+          let data;
+
+          // Special handling for Ameo chat
+          if (otherCatName === "Ameo") {
+            // Load from plugin's clientStorage via message passing
+            return new Promise((resolve) => {
+              const messageHandler = (event) => {
+                if (
+                  event.data.pluginMessage?.type === "ameo-chat-history-loaded"
+                ) {
+                  window.removeEventListener("message", messageHandler);
+                  const messages =
+                    event.data.pluginMessage.payload.messages || [];
+                  messagingState.currentConversation = {
+                    otherCatName,
+                    messages: Array.isArray(messages) ? messages : [],
+                  };
+                  console.log(
+                    `📬 Loaded Ameo chat: ${messagingState.currentConversation.messages.length} messages from plugin storage`
+                  );
+                  renderConversation();
+                  resolve();
+                }
+              };
+              window.addEventListener("message", messageHandler);
+              parent.postMessage(
+                { pluginMessage: { type: "get-ameo-chat-history" } },
+                "*"
+              );
+            });
+          } else {
+            // Load from API for other cats with pagination
+            // Reset pagination state for new conversation
+            paginationState = {
+              currentOffset: 0,
+              pageSize: 50,
+              totalCount: 0,
+              hasMore: true,
+              isLoading: true,
+              isLoadingMore: false,
+            };
+
+            // Add cache buster to ensure fresh conversation data
+            const cacheBreaker = `?t=${Date.now()}`;
+            const url = `${API_BASE_URL}/${currentCatName}/${otherCatName}${cacheBreaker}&offset=${paginationState.currentOffset}&limit=${paginationState.pageSize}`;
+            console.log(`📬 Loading conversation from: ${url}`);
+
+            const response = await fetch(url, { cache: "no-store" });
+            data = await response.json();
+
+            if (!response.ok)
+              throw new Error(data.error || "Failed to load messages");
+
+            console.log(
+              `✅ Loaded ${
+                data.messages?.length || 0
+              } messages for ${currentCatName} <-> ${otherCatName}`
+            );
+
+            // Store conversation info with pagination data
+            messagingState.currentConversation = {
+              otherCatName,
+              messages: data.messages || [],
+            };
+
+            // Store pagination info
+            paginationState.totalCount = data.total_count || 0;
+            paginationState.hasMore = data.has_more || false;
+            paginationState.isLoading = false;
+            messagingState.currentConversationId = data.conversation_id || null;
+
+            console.log(
+              `🔄 Current conversation set to: ${otherCatName}, rendering ${messagingState.currentConversation.messages.length} messages (${paginationState.totalCount} total)`
+            );
+            renderConversation();
+
+            // Start typing polling for friend conversations (not for Ameo)
+            if (
+              otherCatName !== "Ameo" &&
+              messagingState.currentConversationId
+            ) {
+              startTypingPolling(messagingState.currentConversationId);
+            }
+          }
+        } catch (error) {
+          console.error("❌ Load messages error:", error);
+        }
+      }
+
+      // Load more messages (for infinite scroll)
+      async function loadMoreMessages() {
+        // Skip if already loading, no more messages, or Ameo conversation
+        if (
+          paginationState.isLoadingMore ||
+          !paginationState.hasMore ||
+          !selectedConversationUser ||
+          selectedConversationUser === "Ameo"
+        ) {
+          return;
+        }
+
+        paginationState.isLoadingMore = true;
+
+        try {
+          // Calculate next offset
+          const nextOffset =
+            paginationState.currentOffset + paginationState.pageSize;
+          const cacheBreaker = `?t=${Date.now()}`;
+          const url = `${API_BASE_URL}/${currentCatName}/${selectedConversationUser}${cacheBreaker}&offset=${nextOffset}&limit=${paginationState.pageSize}`;
+
+          console.log(`📜 Loading more messages... offset: ${nextOffset}`);
+
+          // Show loading placeholder at top
+          const loadingPlaceholder = document.createElement("div");
+          loadingPlaceholder.id = "pagination-loading-placeholder";
+          loadingPlaceholder.style.cssText = `
+            padding: 16px;
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+          `;
+          loadingPlaceholder.innerHTML = `
+            <div style="width: 12px; height: 12px; background: #999; border-radius: 50%; animation: pulse 1.5s ease-in-out infinite;"></div>
+            <span>Loading older messages...</span>
+          `;
+          messagesContainer.insertBefore(
+            loadingPlaceholder,
+            messagesContainer.firstChild
+          );
+
+          // Store original scroll height to maintain position
+          const scrollHeightBefore = messagesContainer.scrollHeight;
+
+          // Fetch more messages
+          const response = await fetch(url, { cache: "no-store" });
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "Failed to load messages");
+          }
+
+          // Remove loading placeholder
+          const placeholder = document.getElementById(
+            "pagination-loading-placeholder"
+          );
+          if (placeholder) placeholder.remove();
+
+          if (data.messages && data.messages.length > 0) {
+            // Prepend new messages to current conversation
+            messagingState.currentConversation.messages = [
+              ...data.messages,
+              ...messagingState.currentConversation.messages,
+            ];
+
+            // Update pagination state
+            paginationState.currentOffset = nextOffset;
+            paginationState.hasMore = data.has_more || false;
+
+            console.log(`✅ Loaded ${data.messages.length} more messages`);
+
+            // Re-render only the new messages at top
+            renderConversationIncremental(data.messages, true);
+
+            // Maintain scroll position (user stays at same relative position)
+            const scrollHeightAfter = messagesContainer.scrollHeight;
+            const heightAdded = scrollHeightAfter - scrollHeightBefore;
+            messagesContainer.scrollTop = heightAdded;
+          }
+        } catch (error) {
+          console.error("❌ Load more messages error:", error);
+          // Remove loading placeholder on error
+          const placeholder = document.getElementById(
+            "pagination-loading-placeholder"
+          );
+          if (placeholder) placeholder.remove();
+        } finally {
+          paginationState.isLoadingMore = false;
+        }
+      }
+
+      // Render conversation view
+      function renderConversation() {
+        messagesContainer.innerHTML = "";
+
+        const conversation = messagingState.currentConversation;
+        if (!conversation || conversation.messages.length === 0) {
+          messagesContainer.innerHTML =
+            '<div style="text-align: center; color: #999; padding: 20px; font-size: 12px">No messages yet. Start a conversation!</div>';
+          return;
+        }
+
+        let lastDateHeader = null;
+
+        conversation.messages.forEach((msg) => {
+          // Check if we need to add a date header
+          const currentDateHeader = formatDateHeader(msg.created_at);
+          if (lastDateHeader !== currentDateHeader) {
+            const dateHeaderEl = document.createElement("div");
+            dateHeaderEl.className = "message-date-header";
+            dateHeaderEl.textContent = currentDateHeader;
+            messagesContainer.appendChild(dateHeaderEl);
+            lastDateHeader = currentDateHeader;
+          }
+
+          const messageEl = document.createElement("div");
+          const isSent = msg.cat_name === currentCatName;
+
+          // Determine message status and icon
+          let statusIcon = "";
+          let statusClass = "";
+
+          if (isSent) {
+            // For sent messages, show status based on msg.status
+            const status = msg.status || "pending"; // Default to pending if not set
+
+            if (status === "read") {
+              statusIcon = `<span class="material-symbols-outlined message-status-icon read">done_all</span>`;
+              statusClass = "read";
+            } else if (status === "received") {
+              statusIcon = `<span class="material-symbols-outlined message-status-icon received">done_all</span>`;
+              statusClass = "received";
+            } else {
+              // pending status
+              statusIcon = `<span class="material-symbols-outlined message-status-icon pending">check</span>`;
+              statusClass = "pending";
+            }
+          }
+
+          messageEl.className = `message ${isSent ? "sent" : "received"}`;
+          messageEl.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: ${
+              isSent ? "flex-end" : "flex-start"
+            };">
+              <div class="message-bubble">${escapeHtml(msg.content)}</div>
+              <div class="message-time">
+                <span>${formatMessageTime(msg.created_at)}</span>
+                ${statusIcon}
+              </div>
+            </div>
+          `;
+          messagesContainer.appendChild(messageEl);
+        });
+
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        // Add scroll event listener for infinite scroll (once per conversation)
+        if (!messagesContainer.dataset.paginationAttached) {
+          messagesContainer.dataset.paginationAttached = "true";
+          messagesContainer.addEventListener(
+            "scroll",
+            handleConversationScroll
+          );
+        }
+      }
+
+      // Incremental render for newly loaded messages
+      function renderConversationIncremental(
+        newMessages,
+        isPrependingOlder = false
+      ) {
+        if (!newMessages || newMessages.length === 0) return;
+
+        let lastDateHeader = null;
+
+        // Get last date header from current messages to know where to insert
+        const existingDateHeaders = messagesContainer.querySelectorAll(
+          ".message-date-header"
+        );
+        if (existingDateHeaders.length > 0) {
+          lastDateHeader = existingDateHeaders[0].textContent;
+        }
+
+        const fragment = document.createDocumentFragment();
+
+        newMessages.forEach((msg) => {
+          const currentDateHeader = formatDateHeader(msg.created_at);
+
+          // Add date header if needed
+          if (lastDateHeader !== currentDateHeader) {
+            const dateHeaderEl = document.createElement("div");
+            dateHeaderEl.className = "message-date-header";
+            dateHeaderEl.textContent = currentDateHeader;
+            fragment.appendChild(dateHeaderEl);
+            lastDateHeader = currentDateHeader;
+          }
+
+          const messageEl = document.createElement("div");
+          const isSent = msg.cat_name === currentCatName;
+
+          let statusIcon = "";
+          let statusClass = "";
+
+          if (isSent) {
+            const status = msg.status || "pending";
+            if (status === "read") {
+              statusIcon = `<span class="material-symbols-outlined message-status-icon read">done_all</span>`;
+              statusClass = "read";
+            } else if (status === "sent") {
+              statusIcon = `<span class="material-symbols-outlined message-status-icon sent">done</span>`;
+              statusClass = "sent";
+            }
+          }
+
+          messageEl.className = `message ${isSent ? "sent" : "received"}`;
+          messageEl.innerHTML = `
+            <div style="display: flex; flex-direction: column; ${
+              isSent ? "align-items: flex-end;" : "align-items: flex-start;"
+            }">
+              <div class="message-bubble">${escapeHtml(msg.content)}</div>
+              <div style="display: flex; gap: 4px; margin-top: 2px; font-size: 10px; color: #999; align-items: center;">
+                <span>${formatTime(msg.created_at)}</span>
+                ${statusIcon}
+              </div>
+            </div>
+          `;
+          fragment.appendChild(messageEl);
+        });
+
+        // Insert fragment at top if prepending, otherwise append
+        if (isPrependingOlder) {
+          messagesContainer.insertBefore(
+            fragment,
+            messagesContainer.firstChild
+          );
+        } else {
+          messagesContainer.appendChild(fragment);
+        }
+      }
+
+      // Scroll event handler for infinite scroll
+      function handleConversationScroll() {
+        // Debounce scroll events
+        if (paginationDebounceTimeout) {
+          clearTimeout(paginationDebounceTimeout);
+        }
+
+        paginationDebounceTimeout = setTimeout(() => {
+          // Check if user scrolled to top
+          if (
+            messagesContainer.scrollTop < 100 &&
+            paginationState.hasMore &&
+            !paginationState.isLoadingMore
+          ) {
+            console.log("📜 User scrolled to top, loading older messages...");
+            loadMoreMessages();
+          }
+        }, 200); // 200ms debounce
+      }
+
+      // Send a message
+      async function sendMessage() {
+        const content = messageInput.value.trim();
+        if (!content || !currentCatName || !selectedConversationUser) return;
+
+        messageInput.value = "";
+        messageInput.style.height = "28px";
+        sendBtn.disabled = true;
+        sendBtn.classList.remove("visible");
+
+        // Clear typing status when sending message
+        isCurrentlyTyping = false;
+        if (typingTimeout) {
+          clearTimeout(typingTimeout);
+          typingTimeout = null;
+        }
+        if (
+          selectedConversationUser !== "Ameo" &&
+          messagingState.currentConversationId
+        ) {
+          setTypingStatus(messagingState.currentConversationId, false);
+        }
+
+        try {
+          // Special handling for Ameo chat
+          if (selectedConversationUser === "Ameo") {
+            await sendCatMessage(content);
+          } else {
+            // Regular message to other cats
+            const response = await fetch(`${API_BASE_URL}/send`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                sender_cat_name: currentCatName,
+                recipient_cat_name: selectedConversationUser,
+                content,
+              }),
+            });
+
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.error || "Failed to send message");
+            }
+
+            // Reload conversation
+            await loadConversationMessages(selectedConversationUser);
+            await loadConversations();
+          }
+        } catch (error) {
+          console.error("❌ Send message error:", error);
+          messageInput.value = content;
+          handleMessageInput();
+          showMessage("Failed to send message", "error");
+        } finally {
+          sendBtn.disabled = false;
+          messageInput.focus();
+        }
+      }
+
+      // Helper function to show speech bubble from cat
+      async function showCatSpeechBubble(message) {
+        return new Promise((resolve) => {
+          const timeout = setTimeout(() => resolve(), 5000); // Auto-resolve after 5 seconds
+          parent.postMessage(
+            {
+              pluginMessage: {
+                type: "show-speech-bubble",
+                payload: { message },
+              },
+            },
+            "*"
+          );
+          resolve();
+        });
+      }
+
+      // Show typing indicator in conversation
+      function showTypingIndicator() {
+        if (
+          !messagingState.currentConversation ||
+          !messagingState.currentConversation.messages
+        ) {
+          return;
+        }
+
+        const messagesContainer = document.querySelector(".messages-container");
+        if (!messagesContainer) return;
+
+        // Remove existing typing indicator if present
+        const existingIndicator = document.getElementById(
+          "typing-indicator-element"
+        );
+        if (existingIndicator) {
+          existingIndicator.remove();
+        }
+
+        // Create typing indicator element
+        const typingIndicatorEl = document.createElement("div");
+        typingIndicatorEl.id = "typing-indicator-element";
+        typingIndicatorEl.className = "message received";
+        typingIndicatorEl.innerHTML = `
+          <div style="display: flex; flex-direction: column; align-items: flex-start;">
+            <div class="message-bubble typing-indicator">
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+            </div>
+          </div>
+        `;
+
+        messagesContainer.appendChild(typingIndicatorEl);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        console.log("⏳ Typing indicator shown");
+      }
+
+      // Remove typing indicator from conversation
+      function removeTypingIndicator() {
+        const typingIndicatorEl = document.getElementById(
+          "typing-indicator-element"
+        );
+        if (typingIndicatorEl) {
+          typingIndicatorEl.remove();
+          console.log("✓ Typing indicator removed");
+        }
+      }
+
+      // Set typing status on backend (optimized - only on start/stop)
+      async function setTypingStatus(conversationId, isTyping) {
+        if (!currentCatName || !conversationId) return;
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/typing/set`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_cat_name: currentCatName,
+              conversation_id: conversationId,
+              is_typing: isTyping,
+            }),
+          });
+
+          if (!response.ok) {
+            console.warn("Failed to set typing status");
+          }
+        } catch (error) {
+          console.warn("Typing status error:", error);
+        }
+      }
+
+      // Get typing status for a conversation
+      async function getTypingStatus(conversationId) {
+        if (!conversationId) return [];
+
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/typing/${conversationId}`
+          );
+          if (!response.ok) return [];
+
+          const data = await response.json();
+          return data.typing_users || [];
+        } catch (error) {
+          console.warn("Get typing status error:", error);
+          return [];
+        }
+      }
+
+      // Start polling for typing status
+      function startTypingPolling(conversationId) {
+        if (!conversationId || typingPollingInterval) return;
+
+        typingPollingInterval = setInterval(async () => {
+          const typingUsers = await getTypingStatus(conversationId);
+          updateTypingIndicatorsInConversation(typingUsers);
+        }, TYPING_POLL_INTERVAL);
+      }
+
+      // Stop polling for typing status
+      function stopTypingPolling() {
+        if (typingPollingInterval) {
+          clearInterval(typingPollingInterval);
+          typingPollingInterval = null;
+        }
+        // Clear all typing indicators
+        const typingIndicators = document.querySelectorAll(
+          "[data-typing-indicator]"
+        );
+        typingIndicators.forEach((el) => el.remove());
+      }
+
+      // Update typing indicators based on typing status
+      function updateTypingIndicatorsInConversation(typingUsers) {
+        // Filter out current user from typing list
+        const othersTyping = typingUsers.filter(
+          (u) => u.cat_name !== currentCatName
+        );
+
+        // Remove all typing indicators
+        const existingIndicators = document.querySelectorAll(
+          "[data-typing-indicator]"
+        );
+        existingIndicators.forEach((el) => el.remove());
+
+        // Show typing indicators for each typing user
+        if (othersTyping.length > 0) {
+          const messagesContainer = document.querySelector(
+            ".messages-container"
+          );
+          if (!messagesContainer) return;
+
+          othersTyping.forEach((user) => {
+            const typingEl = document.createElement("div");
+            typingEl.setAttribute("data-typing-indicator", user.cat_name);
+            typingEl.className = "message received";
+            typingEl.innerHTML = `
+              <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                <div style="font-size: 11px; color: #999; margin-bottom: 4px;">${escapeHtml(
+                  user.cat_name
+                )} is typing...</div>
+                <div class="message-bubble typing-indicator">
+                  <div class="typing-dot"></div>
+                  <div class="typing-dot"></div>
+                  <div class="typing-dot"></div>
+                </div>
+              </div>
+            `;
+
+            messagesContainer.appendChild(typingEl);
+          });
+
+          // Scroll to bottom to show typing indicator
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+      }
+
+      // Send message to Ameo (cat chat)
+      async function sendCatMessage(userMessage) {
+        try {
+          // Get current conversation history from plugin via message passing
+          const chatHistory = await new Promise((resolve) => {
+            const messageHandler = (event) => {
+              if (
+                event.data.pluginMessage?.type === "ameo-chat-history-loaded"
+              ) {
+                window.removeEventListener("message", messageHandler);
+                const messages =
+                  event.data.pluginMessage.payload.messages || [];
+                resolve(Array.isArray(messages) ? messages : []);
+              }
+            };
+            window.addEventListener("message", messageHandler);
+            parent.postMessage(
+              { pluginMessage: { type: "get-ameo-chat-history" } },
+              "*"
+            );
+          });
+
+          // Add user message to history and display
+          chatHistory.push({
+            cat_name: currentCatName,
+            content: userMessage,
+            created_at: new Date().toISOString(),
+            status: "sent",
+          });
+
+          console.log(`💬 Processing message: "${userMessage}"`);
+
+          // Show typing indicator immediately after user sends message
+          showTypingIndicator();
+
+          // Build conversation history for API
+          const conversationHistory = chatHistory.map((msg) => ({
+            role: msg.cat_name === "Ameo" ? "assistant" : "user",
+            content: msg.content,
+          }));
+
+          // Call chat API
+          const response = await fetch(
+            "https://ameo-production.up.railway.app/api/chat",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                message: userMessage,
+                conversationHistory: conversationHistory,
+              }),
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to get cat response");
+          }
+
+          const data = await response.json();
+          const catReply = data.reply || "Meow? 🐱";
+
+          // Remove typing indicator when reply arrives
+          removeTypingIndicator();
+
+          // Add cat response to history
+          chatHistory.push({
+            cat_name: "Ameo",
+            content: catReply,
+            created_at: new Date().toISOString(),
+            status: "read",
+          });
+
+          console.log(`✨ Ameo's response: "${catReply}"`);
+          // Show response in speech bubble
+          await showCatSpeechBubble(catReply);
+
+          // Save to plugin's clientStorage via message passing
+          return new Promise((resolve, reject) => {
+            const messageHandler = (event) => {
+              if (
+                event.data.pluginMessage?.type === "ameo-chat-history-saved"
+              ) {
+                window.removeEventListener("message", messageHandler);
+                if (event.data.pluginMessage.payload.success) {
+                  // Reload conversation to display new messages
+                  loadConversationMessages("Ameo").then(resolve).catch(reject);
+                } else {
+                  reject(new Error("Failed to save chat history"));
+                }
+              }
+            };
+            window.addEventListener("message", messageHandler);
+            parent.postMessage(
+              {
+                pluginMessage: {
+                  type: "save-ameo-chat-history",
+                  payload: { messages: chatHistory },
+                },
+              },
+              "*"
+            );
+          });
+        } catch (error) {
+          console.error("❌ Cat message error:", error);
+          throw error;
+        }
+      }
+
+      // Invite a friend
+      async function inviteFriend() {
+        const catName = inviteInput.value.trim();
+        if (!catName || !currentCatName) return;
+
+        if (catName === currentCatName) {
+          showMessage("You can't message yourself!", "error");
+          return;
+        }
+
+        inviteBtn.disabled = true;
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/check-name/${catName}`);
+          const data = await response.json();
+
+          if (!data.exists) {
+            showMessage(`No cat named "${catName}" found`, "error");
+            return;
+          }
+
+          // Start conversation
+          inviteInput.value = "";
+          await openConversation(catName);
+          showMessage(`Started chat with ${catName}!`, "success");
+        } catch (error) {
+          console.error("❌ Invite error:", error);
+          showMessage("Failed to find user", "error");
+        } finally {
+          inviteBtn.disabled = false;
+          inviteInput.focus();
+        }
+      }
+
+      // Check for new messages periodically
+      function startMessagePolling() {
+        if (messagingState.isPolling) return;
+        messagingState.isPolling = true;
+
+        messagePollingInterval = setInterval(async () => {
+          try {
+            const response = await fetch(
+              `${API_BASE_URL}/unread/${currentCatName}`
+            );
+            const data = await response.json();
+
+            if (data.unread_count > 0) {
+              // Play notification sound
+              playNotificationSound();
+              // Show notification
+              showMessage(
+                `You have ${data.unread_count} new message(s)!`,
+                "success"
+              );
+              // Reload conversations
+              await loadConversations();
+              // If in a conversation, reload it
+              if (selectedConversationUser) {
+                await loadConversationMessages(selectedConversationUser);
+              }
+            }
+          } catch (error) {
+            console.error("❌ Polling error:", error);
+          }
+        }, 3000); // Poll every 3 seconds
+      }
+
+      // Stop message polling
+      function stopMessagePolling() {
+        if (messagePollingInterval) {
+          clearInterval(messagePollingInterval);
+          messagePollingInterval = null;
+          messagingState.isPolling = false;
+        }
+      }
+
+      // Play notification sound
+      function playNotificationSound() {
+        // Use Web Audio API to create a beep
+        try {
+          const audioContext = new (window.AudioContext ||
+            window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+
+          oscillator.frequency.value = 600;
+          oscillator.type = "sine";
+
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(
+            0.01,
+            audioContext.currentTime + 0.5
+          );
+
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.5);
+        } catch (error) {
+          console.warn("⚠️ Could not play notification sound:", error);
+        }
+      }
+
+      // Utility functions
+      // Helper function to format date intelligently (Today, Yesterday, Day name, or Date)
+      function formatDateSmart(dateString) {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        // Reset time to compare only dates
+        const dateOnly = new Date(
+          date.getFullYear(),
+          date.getMonth(),
+          date.getDate()
+        );
+        const todayOnly = new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          today.getDate()
+        );
+        const yesterdayOnly = new Date(
+          yesterday.getFullYear(),
+          yesterday.getMonth(),
+          yesterday.getDate()
+        );
+
+        if (dateOnly.getTime() === todayOnly.getTime()) {
+          return "Today";
+        } else if (dateOnly.getTime() === yesterdayOnly.getTime()) {
+          return "Yesterday";
+        } else {
+          // Check if within last 7 days (past week)
+          const diffTime = todayOnly.getTime() - dateOnly.getTime();
+          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+          if (diffDays > 0 && diffDays <= 6) {
+            // Show day name (Sunday, Monday, etc.)
+            const dayNames = [
+              "Sunday",
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+            ];
+            return dayNames[date.getDay()];
+          } else {
+            // Show date (Oct 27, 2025)
+            const options = { month: "short", day: "numeric", year: "numeric" };
+            return date.toLocaleDateString("en-US", options);
+          }
+        }
+      }
+
+      // Format time for chat list (show time for today, "Yesterday" for yesterday, day name or date for older)
+      function formatTime(dateString) {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        const today = new Date();
+
+        // Reset time to compare only dates
+        const dateOnly = new Date(
+          date.getFullYear(),
+          date.getMonth(),
+          date.getDate()
+        );
+        const todayOnly = new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          today.getDate()
+        );
+
+        if (dateOnly.getTime() === todayOnly.getTime()) {
+          // Today - show time (HH:MM)
+          const hours = String(date.getHours()).padStart(2, "0");
+          const minutes = String(date.getMinutes()).padStart(2, "0");
+          return `${hours}:${minutes}`;
+        } else {
+          // Not today - use smart date formatting
+          return formatDateSmart(dateString);
+        }
+      }
+
+      // Format time for messages (HH:MM)
+      function formatMessageTime(dateString) {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        return `${hours}:${minutes}`;
+      }
+
+      // Format date header for messages (Today, Yesterday, Day name, or Oct 27, 2025)
+      function formatDateHeader(dateString) {
+        if (!dateString) return "";
+        return formatDateSmart(dateString);
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // Event Listeners
+      inviteBtn.addEventListener("click", inviteFriend);
+      inviteInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") inviteFriend();
+      });
+
+      // Auto-grow textarea and update send button visibility
+      function handleMessageInput() {
+        // Reset height to auto to measure actual content
+        messageInput.style.height = "auto";
+
+        // Measure the scrollHeight
+        const scrollHeight = messageInput.scrollHeight;
+
+        // Only set height if content is more than 1 line (exceeds 28px)
+        if (scrollHeight > 28) {
+          messageInput.style.height = Math.min(scrollHeight, 64) + "px";
+        } else {
+          // Remove inline height style to let CSS handle single line
+          messageInput.style.height = "";
+        }
+
+        // Update send button visibility based on text length
+        if (messageInput.value.trim().length >= 3) {
+          sendBtn.classList.add("visible");
+        } else {
+          sendBtn.classList.remove("visible");
+        }
+
+        // Track typing status for friend conversations (not Ameo)
+        if (
+          selectedConversationUser &&
+          selectedConversationUser !== "Ameo" &&
+          messagingState.currentConversationId
+        ) {
+          const hasText = messageInput.value.trim().length > 0;
+
+          // Send typing start when user first starts typing
+          if (hasText && !isCurrentlyTyping) {
+            isCurrentlyTyping = true;
+            setTypingStatus(messagingState.currentConversationId, true);
+
+            // Clear existing timeout
+            if (typingTimeout) clearTimeout(typingTimeout);
+
+            // Set timeout to mark as not typing after 3 seconds of inactivity
+            typingTimeout = setTimeout(() => {
+              isCurrentlyTyping = false;
+              setTypingStatus(messagingState.currentConversationId, false);
+            }, 3000);
+          } else if (hasText && isCurrentlyTyping) {
+            // Reset timeout while user is still typing
+            if (typingTimeout) clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+              isCurrentlyTyping = false;
+              setTypingStatus(messagingState.currentConversationId, false);
+            }, 3000);
+          }
+        }
+      }
+
+      sendBtn.addEventListener("click", sendMessage);
+      messageInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      // Handle input for auto-grow and send button visibility
+      messageInput.addEventListener("input", handleMessageInput);
+
+      convBackBtn.addEventListener("click", () => {
+        selectedConversationUser = null;
+
+        // Stop typing polling and clear typing status
+        stopTypingPolling();
+
+        // Clear typing state
+        isCurrentlyTyping = false;
+        if (typingTimeout) {
+          clearTimeout(typingTimeout);
+          typingTimeout = null;
+        }
+
+        // Clear input
+        messageInput.value = "";
+        messageInput.style.height = "";
+        sendBtn.classList.remove("visible");
+
+        // Clear conversation ID
+        messagingState.currentConversationId = null;
+
+        messagesConversationView.classList.add("hidden");
+        messagesListView.classList.remove("hidden");
+        loadConversations();
+      });
+
+      // Initialize messaging when plugin loads
+      initializeMessaging();
+
+      // ============================================
+      // TASKS APP HANDLERS
+      // ============================================
+
+      let tasksData = [];
+
+      // Get task app elements
+      const taskListContainer = document.getElementById("task-list");
+      const newTaskInput = document.getElementById("new-task-input");
+      const addTaskBtn = document.getElementById("add-task-btn");
+      const deleteAllTasksBtn = document.getElementById("delete-all-tasks-btn");
+      const deleteAllTasksBottomsheet = document.getElementById(
+        "delete-all-tasks-bottomsheet"
+      );
+      const cancelDeleteAllBtn = document.getElementById(
+        "cancel-delete-all-btn"
+      );
+      const confirmDeleteAllBtn = document.getElementById(
+        "confirm-delete-all-btn"
+      );
+      const deleteAllOverlay = deleteAllTasksBottomsheet.querySelector(
+        ".bottomsheet-overlay"
+      );
+
+      // Header task counter click handler - open tasks app
+      headerTaskCounter.addEventListener("click", () => {
+        openApp("tasks");
+      });
+
+      // Delete all tasks button click handler
+      deleteAllTasksBtn.addEventListener("click", () => {
+        deleteAllTasksBottomsheet.classList.remove("hidden");
+      });
+
+      // Cancel delete all button
+      cancelDeleteAllBtn.addEventListener("click", () => {
+        deleteAllTasksBottomsheet.classList.add("hidden");
+      });
+
+      // Close on overlay click
+      deleteAllOverlay.addEventListener("click", () => {
+        deleteAllTasksBottomsheet.classList.add("hidden");
+      });
+
+      // Confirm delete all tasks
+      confirmDeleteAllBtn.addEventListener("click", () => {
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "delete-all-tasks",
+            },
+          },
+          "*"
+        );
+        deleteAllTasksBottomsheet.classList.add("hidden");
+      });
+
+      // Load tasks when app initializes
+      function loadTasks() {
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "get-tasks",
+            },
+          },
+          "*"
+        );
+      }
+
+      // Render tasks in the task list
+      function renderTasks(tasks) {
+        taskListContainer.innerHTML = "";
+
+        // Update header task counter
+        if (tasks.length > 0) {
+          headerTaskCounterText.textContent = `${tasks.length} task${
+            tasks.length !== 1 ? "s" : ""
+          }`;
+          // Show task counter if not on the tasks page
+          if (currentApp !== "tasks") {
+            headerTaskCounter.classList.remove("hidden");
+          }
+        } else {
+          headerTaskCounterText.textContent = "0 tasks";
+          // Hide task counter if no tasks
+          headerTaskCounter.classList.add("hidden");
+        }
+
+        // Update battery visibility based on task counter visibility
+        updateBatteryVisibility();
+
+        // Show/hide delete button based on task count (show if 2 or more tasks)
+        const deleteAllBtn = document.getElementById("delete-all-tasks-btn");
+        if (tasks.length < 2) {
+          deleteAllBtn.classList.add("hidden");
+          if (tasks.length === 0) {
+            taskListContainer.innerHTML = `
+              <div class="empty-tasks-state">
+                <div class="empty-tasks-emoji">✨</div>
+                <p>No tasks yet</p>
+                <p style="font-size: 12px; color: #bbb;">Add a task to get started!</p>
+              </div>
+            `;
+            return;
+          }
+        } else {
+          deleteAllBtn.classList.remove("hidden");
+        }
+
+        // Sort tasks: incomplete first (newest at top), then completed at the bottom
+        const incompleteTasks = tasks.filter((t) => !t.completed).reverse();
+        const completedTasks = tasks.filter((t) => t.completed);
+        const sortedTasks = [...incompleteTasks, ...completedTasks];
+
+        sortedTasks.forEach((task) => {
+          const taskItem = document.createElement("div");
+          taskItem.className = `task-item ${task.completed ? "completed" : ""}`;
+          taskItem.dataset.taskId = task.id;
+
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.className = "task-checkbox";
+          checkbox.checked = task.completed;
+          checkbox.addEventListener("change", () => toggleTask(task.id));
+
+          const taskText = document.createElement("span");
+          taskText.className = "task-text";
+          taskText.textContent = task.text;
+          taskText.style.cursor = "pointer";
+
+          // Make task text editable on click
+          taskText.addEventListener("click", (e) => {
+            e.stopPropagation();
+
+            // If already editing, ignore
+            if (taskText.contentEditable === "true") return;
+
+            // Enable editing
+            const originalText = taskText.textContent;
+            taskText.contentEditable = "true";
+            taskText.textContent = originalText;
+            taskText.focus();
+
+            // Select all text
+            const range = document.createRange();
+            range.selectNodeContents(taskText);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            // Handle blur and Enter to save
+            const saveEdit = () => {
+              const newText = taskText.textContent.trim();
+              if (newText && newText !== originalText) {
+                // Send update to plugin
+                parent.postMessage(
+                  {
+                    pluginMessage: {
+                      type: "update-task",
+                      payload: { taskId: task.id, newText: newText },
+                    },
+                  },
+                  "*"
+                );
+              } else {
+                // Revert if empty or unchanged
+                taskText.textContent = originalText;
+              }
+              taskText.contentEditable = "false";
+            };
+
+            taskText.addEventListener("blur", saveEdit, { once: true });
+            taskText.addEventListener("keypress", (e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                saveEdit();
+              }
+            });
+          });
+
+          const frameBtn = document.createElement("button");
+          frameBtn.className = "task-frame-btn";
+          frameBtn.innerHTML =
+            '<span class="material-symbols-outlined">link</span>';
+          frameBtn.title = task.frameId ? "Go to frame" : "Link frame";
+          frameBtn.addEventListener("click", () => linkFrame(task.id));
+
+          const deleteBtn = document.createElement("button");
+          deleteBtn.className = "task-delete-btn";
+          deleteBtn.innerHTML =
+            '<span class="material-symbols-outlined">close</span>';
+          deleteBtn.addEventListener("click", () => deleteTask(task.id));
+
+          taskItem.appendChild(checkbox);
+          taskItem.appendChild(taskText);
+          taskItem.appendChild(frameBtn);
+          taskItem.appendChild(deleteBtn);
+          taskListContainer.appendChild(taskItem);
+
+          // Make task item draggable
+          taskItem.draggable = true;
+
+          taskItem.addEventListener("dragstart", (e) => {
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/html", taskItem.innerHTML);
+            taskItem.style.opacity = "0.5";
+            taskItem.dataset.dragging = "true";
+          });
+
+          taskItem.addEventListener("dragend", (e) => {
+            taskItem.style.opacity = "1";
+            taskItem.dataset.dragging = "false";
+            document.querySelectorAll(".task-item").forEach((item) => {
+              item.style.borderTop = "";
+            });
+          });
+
+          taskItem.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+
+            // Get the dragging item
+            const draggingItem = document.querySelector(
+              '[data-dragging="true"]'
+            );
+            if (draggingItem && draggingItem !== taskItem) {
+              // Calculate if we should insert before or after
+              const rect = taskItem.getBoundingClientRect();
+              const midpoint = rect.top + rect.height / 2;
+              if (e.clientY < midpoint) {
+                taskItem.style.borderTop = "2px solid #667eea";
+              } else {
+                taskItem.style.borderTop = "";
+              }
+            }
+          });
+
+          taskItem.addEventListener("drop", (e) => {
+            e.preventDefault();
+            const draggingItem = document.querySelector(
+              '[data-dragging="true"]'
+            );
+
+            if (draggingItem && draggingItem !== taskItem) {
+              // Get all task items
+              const allItems = Array.from(
+                taskListContainer.querySelectorAll(".task-item")
+              );
+              const draggedIndex = allItems.indexOf(draggingItem);
+              const targetIndex = allItems.indexOf(taskItem);
+
+              console.log("=== DRAG DROP DEBUG ===");
+              console.log("Dragged item ID:", draggingItem.dataset.taskId);
+              console.log("Target item ID:", taskItem.dataset.taskId);
+              console.log("Dragged index:", draggedIndex);
+              console.log("Target index:", targetIndex);
+
+              // Determine if dropping in top or bottom half
+              // Use 30% threshold (only top 30% counts as "before", bottom 70% counts as "after")
+              // This makes it easier to reorder downward
+              const rect = taskItem.getBoundingClientRect();
+              const threshold = rect.top + rect.height * 0.3;
+              const insertBefore = e.clientY < threshold;
+
+              console.log("Drop Y:", e.clientY);
+              console.log("Threshold (30%):", threshold);
+              console.log("Insert before?:", insertBefore);
+              console.log(
+                "All items before reorder:",
+                allItems.map((item) => item.dataset.taskId)
+              );
+
+              // Calculate where to insert AFTER removing the dragged item
+              // If insertBefore is true, we want to insert AT targetIndex (after removal)
+              // If insertBefore is false, we want to insert AT targetIndex + 1 (after removal)
+              let insertIndex = insertBefore ? targetIndex : targetIndex + 1;
+
+              // If dragging DOWN (from above), we need to subtract 1 because the item will be removed first
+              if (draggedIndex < insertIndex) {
+                insertIndex--;
+                console.log(
+                  "Dragging DOWN - adjusted from",
+                  insertIndex + 1,
+                  "to",
+                  insertIndex
+                );
+              } else {
+                console.log(
+                  "Dragging UP - no adjustment needed, inserting at",
+                  insertIndex
+                );
+              }
+
+              // Remove the dragged item from its current position first
+              draggingItem.parentNode.removeChild(draggingItem);
+
+              // Get fresh list of remaining items
+              const remainingItems = Array.from(
+                taskListContainer.querySelectorAll(".task-item")
+              );
+
+              console.log(
+                "Remaining items after removal:",
+                remainingItems.map((item) => item.dataset.taskId)
+              );
+              console.log("Final insert index:", insertIndex);
+
+              // Insert at the calculated position
+              if (insertIndex < remainingItems.length) {
+                const referenceNode = remainingItems[insertIndex];
+                console.log(
+                  "Inserting before item:",
+                  referenceNode?.dataset.taskId
+                );
+                taskListContainer.insertBefore(draggingItem, referenceNode);
+              } else {
+                console.log("Appending to end");
+                taskListContainer.appendChild(draggingItem);
+              }
+
+              // Get the new order and send to plugin
+              const newOrder = Array.from(
+                taskListContainer.querySelectorAll(".task-item")
+              ).map((item) => item.dataset.taskId);
+
+              console.log("New order after reorder:", newOrder);
+              console.log("=== END DEBUG ===");
+
+              parent.postMessage(
+                {
+                  pluginMessage: {
+                    type: "reorder-tasks",
+                    payload: { newOrder },
+                  },
+                },
+                "*"
+              );
+            }
+          });
+        });
+      }
+
+      // Add a new task
+      function addTask() {
+        const taskText = newTaskInput.value.trim();
+
+        if (!taskText) {
+          showMessage("Please enter a task!", "error");
+          return;
+        }
+
+        if (!catInitialized) {
+          showMessage("Please create a cat first!", "error");
+          return;
+        }
+
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "add-task",
+              payload: { taskText },
+            },
+          },
+          "*"
+        );
+
+        newTaskInput.value = "";
+        addTaskBtn.classList.remove("visible");
+
+        // Force reset height with timeout to ensure DOM updates
+        setTimeout(() => {
+          newTaskInput.style.height = "";
+          newTaskInput.style.height = "28px";
+          newTaskInput.style.height = "";
+        }, 0);
+
+        newTaskInput.focus();
+      }
+
+      // Toggle task completion
+      function toggleTask(taskId) {
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "toggle-task",
+              payload: { taskId },
+            },
+          },
+          "*"
+        );
+      }
+
+      // Delete a task
+      function deleteTask(taskId) {
+        if (confirm("Delete this task?")) {
+          parent.postMessage(
+            {
+              pluginMessage: {
+                type: "delete-task",
+                payload: { taskId },
+              },
+            },
+            "*"
+          );
+        }
+      }
+
+      // Link frame to task
+      function linkFrame(taskId) {
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "open-task-frame",
+              payload: { taskId },
+            },
+          },
+          "*"
+        );
+      }
+
+      // Handle task input changes - auto-grow and show/hide button
+      function handleTaskInput() {
+        // Auto-grow the textarea based on content
+        newTaskInput.style.height = "auto";
+        const scrollHeight = newTaskInput.scrollHeight;
+
+        // Set height up to max 64px, but allow it to shrink back to 28px for empty/short content
+        if (scrollHeight <= 28) {
+          newTaskInput.style.height = "28px";
+        } else {
+          newTaskInput.style.height = Math.min(scrollHeight, 64) + "px";
+        }
+
+        // Update button visibility based on text length (3+ chars like send-btn)
+        if (newTaskInput.value.trim().length >= 3) {
+          addTaskBtn.classList.add("visible");
+        } else {
+          addTaskBtn.classList.remove("visible");
+        }
+      }
+
+      // Event listeners for task app
+      if (addTaskBtn) {
+        addTaskBtn.addEventListener("click", addTask);
+      }
+
+      if (newTaskInput) {
+        newTaskInput.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault(); // Prevent newline
+            addTask();
+          }
+        });
+        // Handle input for button visibility
+        newTaskInput.addEventListener("input", handleTaskInput);
+      }
+
+      // Handle messages from plugin
+      window.addEventListener("message", (event) => {
+        const message = event.data.pluginMessage;
+        if (!message) return;
+
+        if (message.type === "tasks-loaded") {
+          tasksData = message.payload.tasks;
+          renderTasks(tasksData);
+        } else if (message.type === "task-added") {
+          tasksData = message.payload.tasks;
+          renderTasks(tasksData);
+        } else if (message.type === "task-toggled") {
+          tasksData = message.payload.tasks;
+          renderTasks(tasksData);
+        } else if (message.type === "task-deleted") {
+          tasksData = message.payload.tasks;
+          renderTasks(tasksData);
+        } else if (message.type === "task-updated") {
+          tasksData = message.payload.tasks;
+          renderTasks(tasksData);
+        } else if (message.type === "frame-linked") {
+          // Update UI to show frame is linked
+          const taskId = message.payload.taskId;
+          const taskItem = document.querySelector(`[data-task-id="${taskId}"]`);
+          if (taskItem) {
+            const frameBtn = taskItem.querySelector(".task-frame-btn");
+            if (frameBtn) {
+              frameBtn.textContent = "📌";
+              frameBtn.title = "Go to frame";
+            }
+          }
+        }
+      });
+
+      // Load tasks when opening the app
+      // Add task loading to the existing app button listeners
+      document.querySelectorAll(".app-button").forEach((btn) => {
+        if (btn.dataset.app === "tasks") {
+          btn.addEventListener("click", loadTasks);
+        }
+      });
+
+      // Load tasks on plugin initialization to show header counter
+      loadTasks();
+    </script>
+  </body>
+</html>
