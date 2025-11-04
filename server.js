@@ -823,6 +823,18 @@ async function initializeDatabase() {
       );
     `);
 
+    // Create typing_status table for real-time typing indicators
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS typing_status (
+        id SERIAL PRIMARY KEY,
+        conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        is_typing BOOLEAN DEFAULT FALSE,
+        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(conversation_id, user_id)
+      );
+    `);
+
     console.log("Database tables initialized successfully");
   } catch (error) {
     console.error("Database initialization error:", error.message);
@@ -1098,12 +1110,77 @@ app.get("/api/messages/:user_cat_name/:other_cat_name", async (req, res) => {
     );
 
     res.json({
+      conversation_id: conversationId,
       messages: msgResult.rows,
       otherUserInfo: { cat_name: other_cat_name, id: otherId },
     });
   } catch (error) {
     console.error("Get conversation error:", error.message);
     res.status(500).json({ error: "Failed to get conversation" });
+  }
+});
+
+// ============================================
+// Typing Status API (Optimized)
+// ============================================
+
+// Set typing status (called when user starts/stops typing)
+app.post("/api/typing/set", async (req, res) => {
+  try {
+    const { user_cat_name, conversation_id, is_typing } = req.body;
+
+    if (!user_cat_name || !conversation_id || is_typing === undefined) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Get user ID
+    const userResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [user_cat_name]);
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userResult.rows[0].id;
+
+    // Upsert typing status (insert or update)
+    await pool.query(
+      `INSERT INTO typing_status (conversation_id, user_id, is_typing, last_updated)
+       VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+       ON CONFLICT (conversation_id, user_id) DO UPDATE SET
+         is_typing = $3,
+         last_updated = CURRENT_TIMESTAMP`,
+      [conversation_id, userId, is_typing]
+    );
+
+    console.log(`⏳ ${is_typing ? "Started" : "Stopped"} typing: ${user_cat_name} in conversation ${conversation_id}`);
+    res.json({ success: true, is_typing });
+  } catch (error) {
+    console.error("Set typing status error:", error.message);
+    res.status(500).json({ error: "Failed to set typing status" });
+  }
+});
+
+// Get typing status for a conversation
+app.get("/api/typing/:conversation_id", async (req, res) => {
+  try {
+    const { conversation_id } = req.params;
+
+    // Get all typing statuses in this conversation that are currently typing
+    // Only include statuses updated in the last 10 seconds (to handle stale data)
+    const result = await pool.query(
+      `SELECT t.user_id, u.cat_name, t.is_typing, t.last_updated
+       FROM typing_status t
+       JOIN users u ON t.user_id = u.id
+       WHERE t.conversation_id = $1
+         AND t.is_typing = TRUE
+         AND (CURRENT_TIMESTAMP - t.last_updated) < INTERVAL '10 seconds'
+       ORDER BY t.last_updated DESC`,
+      [conversation_id]
+    );
+
+    res.json({ typing_users: result.rows });
+  } catch (error) {
+    console.error("Get typing status error:", error.message);
+    res.status(500).json({ error: "Failed to get typing status" });
   }
 });
 
