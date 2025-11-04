@@ -802,13 +802,6 @@ async function initializeDatabase() {
     `);
 
     // Create conversations table
-    // Drop if exists with bad schema
-    try {
-      await pool.query(`DROP TABLE IF EXISTS conversations CASCADE;`);
-    } catch (e) {
-      // Ignore if table doesn't exist
-    }
-
     await pool.query(`
       CREATE TABLE IF NOT EXISTS conversations (
         id SERIAL PRIMARY KEY,
@@ -930,6 +923,11 @@ app.get("/api/messages/list/:user_cat_name", async (req, res) => {
     );
 
     console.log(`📋 Found ${convResult.rows.length} conversations for user ID ${userId}`);
+    if (convResult.rows.length > 0) {
+      convResult.rows.forEach((conv, index) => {
+        console.log(`   [${index}] Conversation ${conv.id}: ${user_cat_name} <-> ${conv.other_cat_name}`);
+      });
+    }
     res.json({ conversations: convResult.rows });
   } catch (error) {
     console.error("Get conversations error:", error.message);
