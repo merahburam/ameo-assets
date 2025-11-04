@@ -1042,7 +1042,10 @@ app.post("/api/messages/send", async (req, res) => {
 app.get("/api/messages/:user_cat_name/:other_cat_name", async (req, res) => {
   try {
     const { user_cat_name, other_cat_name } = req.params;
-    console.log(`📬 Getting conversation between ${user_cat_name} and ${other_cat_name}`);
+    const offset = parseInt(req.query.offset) || 0;
+    const limit = parseInt(req.query.limit) || 50;
+
+    console.log(`📬 Getting conversation between ${user_cat_name} and ${other_cat_name} (offset: ${offset}, limit: ${limit})`);
 
     // Get user IDs
     const userResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [
@@ -1070,37 +1073,33 @@ app.get("/api/messages/:user_cat_name/:other_cat_name", async (req, res) => {
 
     if (convResult.rows.length === 0) {
       console.log(`📭 No conversation found between ${user_cat_name} and ${other_cat_name}, returning empty`);
-      return res.json({ messages: [], otherUserInfo: { cat_name: other_cat_name, id: otherId } });
+      return res.json({
+        conversation_id: null,
+        messages: [],
+        total_count: 0,
+        otherUserInfo: { cat_name: other_cat_name, id: otherId }
+      });
     }
 
     const conversationId = convResult.rows[0].id;
     console.log(`💬 Found conversation ID: ${conversationId}`);
 
-    // Debug: Check who is actually in this conversation
-    const convDebug = await pool.query(
-      `SELECT c.id, u1.cat_name as user1, u2.cat_name as user2, c.user1_id, c.user2_id FROM conversations c
-       JOIN users u1 ON c.user1_id = u1.id
-       JOIN users u2 ON c.user2_id = u2.id
-       WHERE c.id = $1`,
+    // Get total message count for pagination
+    const countResult = await pool.query(
+      "SELECT COUNT(*) as count FROM messages WHERE conversation_id = $1",
       [conversationId]
     );
-    if (convDebug.rows.length > 0) {
-      const conv = convDebug.rows[0];
-      console.log(`🔍 Conversation ${conversationId} contains: ${conv.user1} (${conv.user1_id}) <-> ${conv.user2} (${conv.user2_id})`);
-      console.log(`   Expected: ${user_cat_name} (${userId}) <-> ${other_cat_name} (${otherId})`);
-      if (conv.user1_id !== userId && conv.user2_id !== userId) {
-        console.log(`   ⚠️ WARNING: User ${user_cat_name} (${userId}) is NOT in this conversation!`);
-      }
-    }
+    const totalCount = parseInt(countResult.rows[0].count);
 
-    // Get all messages and mark as read
+    // Get paginated messages (offset from oldest, ascending order)
     const msgResult = await pool.query(
       `SELECT m.id, m.content, m.sender_id, m.created_at, u.cat_name
        FROM messages m
        JOIN users u ON m.sender_id = u.id
        WHERE m.conversation_id = $1
-       ORDER BY m.created_at ASC`,
-      [conversationId]
+       ORDER BY m.created_at ASC
+       LIMIT $2 OFFSET $3`,
+      [conversationId, limit, offset]
     );
 
     // Mark unread messages as read
@@ -1112,6 +1111,10 @@ app.get("/api/messages/:user_cat_name/:other_cat_name", async (req, res) => {
     res.json({
       conversation_id: conversationId,
       messages: msgResult.rows,
+      total_count: totalCount,
+      offset: offset,
+      limit: limit,
+      has_more: offset + limit < totalCount,
       otherUserInfo: { cat_name: other_cat_name, id: otherId },
     });
   } catch (error) {
