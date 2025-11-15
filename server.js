@@ -192,7 +192,6 @@ async function generateDailySpeeches() {
             content: prompt
           }
         ],
-        temperature: 0.9,
         max_completion_tokens: 2000
       })
     });
@@ -602,41 +601,53 @@ Available categories: layout, spacing, color, typography, accessibility, respons
     }
     const content = data.choices[0].message.content;
 
-    console.log(`🤖 GPT-5.1 Response: ${content.substring(0, 200)}...`);
+    console.log(`🤖 GPT-5.1 Full Response Length: ${content.length} chars`);
+    console.log(`🤖 GPT-5.1 Response Preview: ${content.substring(0, 300)}`);
+    console.log(`🤖 GPT-5.1 Full Response: ${content}`);
 
     // Try to parse as array (multiple feedback points)
     const arrayMatch = content.match(/\[[\s\S]*\]/);
     if (arrayMatch) {
       try {
+        console.log(`📍 Found JSON array, attempting parse...`);
         const parsed = JSON.parse(arrayMatch[0]);
         if (Array.isArray(parsed) && parsed.length > 0) {
           // Return array of feedback items with cleaned markdown
-          console.log(`✅ Parsed ${parsed.length} feedback items from JSON array`);
+          console.log(`✅ Successfully parsed ${parsed.length} feedback items from JSON array`);
+          console.log(`📊 Parsed data:`, JSON.stringify(parsed));
           return parsed.map((item) => ({
             feedback: cleanMarkdownFromFeedback(item.feedback) || "Nice design!",
             category: item.category || "general",
             confidence: item.confidence || 0.8,
           }));
+        } else {
+          console.warn("⚠️ Parsed array but empty or not an array");
         }
       } catch (e) {
-        console.warn("Failed to parse JSON array:", e.message);
+        console.warn("❌ Failed to parse JSON array:", e.message);
       }
+    } else {
+      console.warn("❌ No JSON array found in response");
     }
 
     // Fallback to single feedback object
     const objMatch = content.match(/\{[\s\S]*\}/);
     if (objMatch) {
       try {
+        console.log(`📍 Found JSON object, attempting parse...`);
         const parsed = JSON.parse(objMatch[0]);
-        console.log(`✅ Parsed single feedback object`);
+        console.log(`✅ Successfully parsed single feedback object`);
+        console.log(`📊 Parsed data:`, JSON.stringify(parsed));
         return [{
           feedback: cleanMarkdownFromFeedback(parsed.feedback) || "Nice design!",
           category: parsed.category || "general",
           confidence: parsed.confidence || 0.8,
         }];
       } catch (e) {
-        console.warn("Failed to parse JSON object:", e.message);
+        console.warn("❌ Failed to parse JSON object:", e.message);
       }
+    } else {
+      console.warn("❌ No JSON object found in response");
     }
 
     // If no JSON found, try to parse as numbered list format
@@ -779,7 +790,6 @@ Never mention that you're an AI - you're just a clever cat.`;
       body: JSON.stringify({
         model: "gpt-5.1-chat-latest",
         messages: messages,
-        temperature: 0.8,
         max_completion_tokens: 150
       })
     });
