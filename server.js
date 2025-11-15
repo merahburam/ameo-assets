@@ -521,42 +521,37 @@ Analyze the frame based on metadata and provide feedback on design aspects.`;
 
     textContent += `
 
-CRITICAL INSTRUCTIONS FOR RESPONSE:
+YOU MUST respond ONLY with valid JSON. No other text before or after.
 
-1. Provide feedback as a JSON array with 4-6 specific, actionable, and detailed comments
-2. Each comment should be 1-2 sentences minimum
-3. Provide insights, not generic praise
-4. Include specific observations about the design
-
-ABSOLUTELY NO MARKDOWN OR SPECIAL FORMATTING:
-- NEVER use # or ### for headers
-- NEVER use ** or * for bold or italic
-- NEVER use __ or _ for styling
-- NEVER use any special formatting symbols
-- Write ONLY plain English text with NO symbols whatsoever
-- Do not use bullet points (-)
-
-FORMAT YOUR RESPONSE EXACTLY LIKE THIS (valid JSON only):
+RESPOND WITH ONLY THIS JSON FORMAT:
 [
   {
-    "feedback": "Specific detailed observation about the design without any symbols",
+    "feedback": "First specific observation about the design",
     "category": "layout"
   },
   {
-    "feedback": "Another specific improvement suggestion with actionable details",
+    "feedback": "Second specific observation about the design",
     "category": "spacing"
+  },
+  {
+    "feedback": "Third specific observation about the design",
+    "category": "color"
+  },
+  {
+    "feedback": "Fourth specific observation about the design",
+    "category": "typography"
   }
 ]
 
-EXAMPLES OF CORRECT FEEDBACK (plain text, detailed, and specific):
-- Correct: "The layout uses a grid system effectively, though the padding between sections could be increased by 8-16px for better breathing room"
-- Correct: "The color palette is cohesive, but the contrast between the text and background could be improved for WCAG AA compliance"
-- Correct: "The typography hierarchy is clear with distinct sizing, but the line heights could be optimized for mobile readability"
-- WRONG: "Good design"
-- WRONG: "**Bold text**"
-- WRONG: "### Heading"
-
-Available categories: layout, spacing, color, typography, accessibility, responsive, general, ux-flow`;
+IMPORTANT RULES:
+- Response MUST be valid JSON only
+- Do not include any text before [
+- Do not include any text after ]
+- Each feedback must be plain text, no markdown or special symbols
+- Do not use **, ##, bold, italic, or any formatting
+- Use categories: layout, spacing, color, typography, accessibility, responsive, general, ux-flow
+- Each feedback should be specific and actionable
+- Provide exactly 4 feedback items`;
 
     // If no image was added, use text content directly
     if (!hasImage) {
