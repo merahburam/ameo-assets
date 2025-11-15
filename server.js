@@ -521,37 +521,8 @@ Analyze the frame based on metadata and provide feedback on design aspects.`;
 
     textContent += `
 
-YOU MUST respond ONLY with valid JSON. No other text before or after.
-
-RESPOND WITH ONLY THIS JSON FORMAT:
-[
-  {
-    "feedback": "First specific observation about the design",
-    "category": "layout"
-  },
-  {
-    "feedback": "Second specific observation about the design",
-    "category": "spacing"
-  },
-  {
-    "feedback": "Third specific observation about the design",
-    "category": "color"
-  },
-  {
-    "feedback": "Fourth specific observation about the design",
-    "category": "typography"
-  }
-]
-
-IMPORTANT RULES:
-- Response MUST be valid JSON only
-- Do not include any text before [
-- Do not include any text after ]
-- Each feedback must be plain text, no markdown or special symbols
-- Do not use **, ##, bold, italic, or any formatting
-- Use categories: layout, spacing, color, typography, accessibility, responsive, general, ux-flow
-- Each feedback should be specific and actionable
-- Provide exactly 4 feedback items`;
+Output ONLY this exact JSON structure with 4 items, nothing else:
+[{"feedback":"observation 1","category":"layout"},{"feedback":"observation 2","category":"spacing"},{"feedback":"observation 3","category":"color"},{"feedback":"observation 4","category":"typography"}]`;
 
     // If no image was added, use text content directly
     if (!hasImage) {
@@ -574,12 +545,16 @@ IMPORTANT RULES:
         model: "gpt-5.1",
         messages: [
           {
+            role: "system",
+            content: "You are a JSON-only output assistant. You MUST respond ONLY with valid JSON. No text before or after. Every response must be a valid JSON array or object."
+          },
+          {
             role: "user",
             content: messageContent,
           },
         ],
         temperature: 0.7,
-        max_completion_tokens: 1500,
+        max_completion_tokens: 500,
       }),
     });
 
