@@ -584,7 +584,7 @@ Available categories: layout, spacing, color, typography, accessibility, respons
           },
         ],
         temperature: 0.7,
-        max_completion_tokens: 500,
+        max_completion_tokens: 1500,
       }),
     });
 
