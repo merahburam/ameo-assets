@@ -422,9 +422,11 @@ async function generateDesignFeedback(frameData) {
   const openaiApiKey = process.env.OPENAI_API_KEY;
 
   if (!openaiApiKey) {
-    console.warn("OpenAI API key not configured, using simple feedback");
+    console.error("🔴 OpenAI API key NOT configured! Using fallback simple feedback. Set OPENAI_API_KEY environment variable.");
     return generateSimpleFeedback(frameData);
   }
+
+  console.log("✅ OpenAI API key is configured");
 
   try {
     // Build base prompt
@@ -520,35 +522,42 @@ Analyze the frame based on metadata and provide feedback on design aspects.`;
 
     textContent += `
 
-CRITICAL: Provide feedback as a JSON array with 3-4 specific, actionable comments.
+CRITICAL INSTRUCTIONS FOR RESPONSE:
 
-ABSOLUTELY NO MARKDOWN:
+1. Provide feedback as a JSON array with 4-6 specific, actionable, and detailed comments
+2. Each comment should be 1-2 sentences minimum
+3. Provide insights, not generic praise
+4. Include specific observations about the design
+
+ABSOLUTELY NO MARKDOWN OR SPECIAL FORMATTING:
 - NEVER use # or ### for headers
 - NEVER use ** or * for bold or italic
 - NEVER use __ or _ for styling
 - NEVER use any special formatting symbols
 - Write ONLY plain English text with NO symbols whatsoever
+- Do not use bullet points (-)
 
-FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
+FORMAT YOUR RESPONSE EXACTLY LIKE THIS (valid JSON only):
 [
   {
-    "feedback": "First point here without any symbols or formatting",
+    "feedback": "Specific detailed observation about the design without any symbols",
     "category": "layout"
   },
   {
-    "feedback": "Second point here without any symbols or formatting",
+    "feedback": "Another specific improvement suggestion with actionable details",
     "category": "spacing"
   }
 ]
 
-EXAMPLES OF CORRECT FEEDBACK (plain text only):
-- Correct: "The layout is clean and organized with good spacing"
-- Correct: "The sidebar navigation could be more intuitive"
+EXAMPLES OF CORRECT FEEDBACK (plain text, detailed, and specific):
+- Correct: "The layout uses a grid system effectively, though the padding between sections could be increased by 8-16px for better breathing room"
+- Correct: "The color palette is cohesive, but the contrast between the text and background could be improved for WCAG AA compliance"
+- Correct: "The typography hierarchy is clear with distinct sizing, but the line heights could be optimized for mobile readability"
+- WRONG: "Good design"
 - WRONG: "**Bold text**"
 - WRONG: "### Heading"
-- WRONG: "- Bullet point with **bold**"
 
-Use these categories: layout, spacing, color, typography, accessibility, general`;
+Available categories: layout, spacing, color, typography, accessibility, responsive, general, ux-flow`;
 
     // If no image was added, use text content directly
     if (!hasImage) {
@@ -576,7 +585,7 @@ Use these categories: layout, spacing, color, typography, accessibility, general
           },
         ],
         temperature: 0.7,
-        max_tokens: 500,
+        max_tokens: 1500,
       }),
     });
 
@@ -593,29 +602,41 @@ Use these categories: layout, spacing, color, typography, accessibility, general
     }
     const content = data.choices[0].message.content;
 
+    console.log(`🤖 GPT-5.1 Response: ${content.substring(0, 200)}...`);
+
     // Try to parse as array (multiple feedback points)
     const arrayMatch = content.match(/\[[\s\S]*\]/);
     if (arrayMatch) {
-      const parsed = JSON.parse(arrayMatch[0]);
-      if (Array.isArray(parsed)) {
-        // Return array of feedback items with cleaned markdown
-        return parsed.map((item) => ({
-          feedback: cleanMarkdownFromFeedback(item.feedback) || "Nice design!",
-          category: item.category || "general",
-          confidence: item.confidence || 0.8,
-        }));
+      try {
+        const parsed = JSON.parse(arrayMatch[0]);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Return array of feedback items with cleaned markdown
+          console.log(`✅ Parsed ${parsed.length} feedback items from JSON array`);
+          return parsed.map((item) => ({
+            feedback: cleanMarkdownFromFeedback(item.feedback) || "Nice design!",
+            category: item.category || "general",
+            confidence: item.confidence || 0.8,
+          }));
+        }
+      } catch (e) {
+        console.warn("Failed to parse JSON array:", e.message);
       }
     }
 
     // Fallback to single feedback object
     const objMatch = content.match(/\{[\s\S]*\}/);
     if (objMatch) {
-      const parsed = JSON.parse(objMatch[0]);
-      return [{
-        feedback: cleanMarkdownFromFeedback(parsed.feedback) || "Nice design!",
-        category: parsed.category || "general",
-        confidence: parsed.confidence || 0.8,
-      }];
+      try {
+        const parsed = JSON.parse(objMatch[0]);
+        console.log(`✅ Parsed single feedback object`);
+        return [{
+          feedback: cleanMarkdownFromFeedback(parsed.feedback) || "Nice design!",
+          category: parsed.category || "general",
+          confidence: parsed.confidence || 0.8,
+        }];
+      } catch (e) {
+        console.warn("Failed to parse JSON object:", e.message);
+      }
     }
 
     // If no JSON found, try to parse as numbered list format
