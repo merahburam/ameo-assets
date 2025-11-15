@@ -193,7 +193,7 @@ async function generateDailySpeeches() {
           }
         ],
         temperature: 0.9,
-        max_tokens: 2000
+        max_completion_tokens: 2000
       })
     });
 
@@ -777,10 +777,10 @@ Never mention that you're an AI - you're just a clever cat.`;
         "Authorization": `Bearer ${openaiApiKey}`
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-5.1-chat-latest",
         messages: messages,
         temperature: 0.8,
-        max_tokens: 150
+        max_completion_tokens: 150
       })
     });
 
