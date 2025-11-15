@@ -121,7 +121,7 @@ app.get("/", (req, res) => {
 });
 
 // ============================================
-// Daily Speech Generation API (GPT-4o)
+// Daily Speech Generation API (GPT-5.1-chat-latest)
 // ============================================
 
 app.get("/api/speech/daily", async (req, res) => {
@@ -164,7 +164,7 @@ app.get("/api/speech/daily", async (req, res) => {
 });
 
 // ============================================
-// Generate Daily Speeches (GPT-4o)
+// Generate Daily Speeches (GPT-5.1-chat-latest)
 // ============================================
 
 async function generateDailySpeeches() {
@@ -185,7 +185,7 @@ async function generateDailySpeeches() {
         "Authorization": `Bearer ${openaiApiKey}`
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-5.1-chat-latest",
         messages: [
           {
             role: "user",
@@ -415,7 +415,7 @@ function parseNumberedListFormat(text) {
 }
 
 // ============================================
-// AI Feedback Implementation (OpenAI GPT-4o)
+// AI Feedback Implementation (OpenAI GPT-5.1)
 // ============================================
 
 async function generateDesignFeedback(frameData) {
@@ -568,7 +568,7 @@ Use these categories: layout, spacing, color, typography, accessibility, general
         Authorization: `Bearer ${openaiApiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "gpt-5.1",
         messages: [
           {
             role: "user",
