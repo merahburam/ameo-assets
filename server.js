@@ -535,7 +535,33 @@ Output ONLY this exact JSON structure with 4 items, nothing else:
     // Log what we're sending to OpenAI
     console.log(`📤 Sending to OpenAI: ${messageContent.length} content items (${hasImage ? 'with PNG' : 'text only'})`);
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    // Build input for Responses API (GPT-5.1 compatible format)
+    const inputContent = [];
+    let textPart = textContent;
+
+    if (hasImage) {
+      // Add text first, then image (for Responses API)
+      inputContent.push({
+        type: "input_text",
+        text: textPart
+      });
+      // Find the PNG from messageContent
+      const pngItem = messageContent.find(item => item.type === "image_url");
+      if (pngItem) {
+        inputContent.push({
+          type: "input_image",
+          image_url: pngItem.image_url.url
+        });
+      }
+    } else {
+      // Text only
+      inputContent.push({
+        type: "input_text",
+        text: textPart
+      });
+    }
+
+    const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -543,18 +569,13 @@ Output ONLY this exact JSON structure with 4 items, nothing else:
       },
       body: JSON.stringify({
         model: "gpt-5.1",
-        messages: [
-          {
-            role: "system",
-            content: "You are a JSON-only output assistant. You MUST respond ONLY with valid JSON. No text before or after. Every response must be a valid JSON array or object."
-          },
+        input: [
           {
             role: "user",
-            content: messageContent,
+            content: inputContent,
           },
         ],
-        temperature: 0.7,
-        max_completion_tokens: 500,
+        max_output_tokens: 1000,
       }),
     });
 
@@ -565,11 +586,11 @@ Output ONLY this exact JSON structure with 4 items, nothing else:
     }
 
     const data = await response.json();
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      console.error("Invalid OpenAI response structure:", data);
+    if (!data.output || !data.output[0] || !data.output[0].content || !data.output[0].content[0]) {
+      console.error("Invalid OpenAI Responses API structure:", data);
       throw new Error("Invalid response from OpenAI API");
     }
-    const content = data.choices[0].message.content;
+    const content = data.output[0].content[0].text;
 
     console.log(`🤖 GPT-5.1 Full Response Length: ${content.length} chars`);
     console.log(`🤖 GPT-5.1 Response Preview: ${content.substring(0, 300)}`);
