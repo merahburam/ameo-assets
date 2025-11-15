@@ -2,8 +2,8 @@
  * Ameo Unified Server
  * Serves:
  * 1. Static assets (sprites)
- * 2. AI feedback via OpenAI GPT-4o API
- * 3. Daily speech generation via OpenAI GPT-4o
+ * 2. AI feedback via OpenAI GPT-5.1 Responses API
+ * 3. Daily speech generation via OpenAI GPT-5.1-chat-latest
  * 4. Messaging system via PostgreSQL
  *
  * Deploy to Railway:
@@ -216,7 +216,7 @@ async function generateDailySpeeches() {
     return validateAndCombineSpeeches(aiSpeeches);
 
   } catch (error) {
-    console.error("❌ Failed to generate speeches with GPT-4o:", error.message);
+    console.error("❌ Failed to generate speeches with GPT-5.1-chat-latest:", error.message);
     console.log("🔄 Falling back to hardcoded speeches");
     return FALLBACK_SPEECHES;
   }
@@ -438,7 +438,7 @@ Has borders: ${frameData.strokes ? frameData.strokes.length > 0 : false}`;
     // Check if frame is empty
     const isEmpty = !frameData.fills || frameData.fills.length === 0;
 
-    // Build message content array (for GPT-4o vision)
+    // Build message content array (for GPT-5.1 vision - Responses API format)
     const messageContent = [];
     let hasImage = false;
 
@@ -468,8 +468,8 @@ Frame content description available. Analyzing...`;
         }
       } else if (frameData.svgBase64.startsWith("iVBORw0KGgo")) {
         // PNG format (base64 PNG always starts with iVBORw0KGgo)
-        // Use GPT-4o vision API with image_url content
-        console.log(`🖼️ Frame has PNG image (${frameData.svgBase64.length} chars base64) - will send to GPT-4o vision API`);
+        // Use GPT-5.1 Responses API with vision support
+        console.log(`🖼️ Frame has PNG image (${frameData.svgBase64.length} chars base64) - will send to GPT-5.1 Responses API`);
         textContent += `
 
 Analyze the PNG screenshot of the frame above and provide detailed feedback on:
