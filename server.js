@@ -177,6 +177,23 @@ async function generateDailySpeeches() {
 
   try {
     const prompt = generateSpeechPrompt();
+    console.log(`📝 Speech prompt generated (${prompt.length} chars)`);
+
+    const requestBody = {
+      model: "gpt-5.1-chat-latest",
+      messages: [
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      max_completion_tokens: 2000
+    };
+
+    console.log(`🚀 Sending daily speech request to OpenAI:`);
+    console.log(`   Model: ${requestBody.model}`);
+    console.log(`   Max tokens: ${requestBody.max_completion_tokens}`);
+    console.log(`   Prompt length: ${prompt.length} chars`);
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -184,39 +201,67 @@ async function generateDailySpeeches() {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${openaiApiKey}`
       },
-      body: JSON.stringify({
-        model: "gpt-5.1-chat-latest",
-        messages: [
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        max_completion_tokens: 2000
-      })
+      body: JSON.stringify(requestBody)
     });
 
+    console.log(`📡 OpenAI response status: ${response.status} ${response.statusText}`);
+
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error(`OpenAI API error (${response.status}):`, errorData);
-      throw new Error(`OpenAI API error: ${response.statusText}`);
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (parseErr) {
+        const errorText = await response.text();
+        console.error(`❌ OpenAI API error (${response.status}):`, errorText);
+        throw new Error(`OpenAI returned ${response.status}: ${response.statusText}`);
+      }
+
+      console.error(`❌ OpenAI API error (${response.status}):`, JSON.stringify(errorData, null, 2));
+      console.error(`   Error type: ${errorData.error?.type}`);
+      console.error(`   Error message: ${errorData.error?.message}`);
+      console.error(`   Error param: ${errorData.error?.param}`);
+      console.error(`   Error code: ${errorData.error?.code}`);
+
+      throw new Error(`OpenAI API error (${response.status}): ${errorData.error?.message || response.statusText}`);
     }
 
     const data = await response.json();
+    console.log(`✅ OpenAI response received successfully`);
+
+    if (!data.choices || !data.choices[0]) {
+      console.error(`❌ Invalid OpenAI response structure:`, JSON.stringify(data, null, 2));
+      throw new Error("Invalid response structure from OpenAI");
+    }
+
     const content = data.choices[0]?.message?.content;
 
     if (!content) {
+      console.error(`❌ Empty content in OpenAI response`);
       throw new Error("Empty response from OpenAI");
     }
 
+    console.log(`📝 Response content length: ${content.length} chars`);
+    console.log(`📝 Response preview: ${content.substring(0, 200)}...`);
+
     // Parse JSON response
-    const aiSpeeches = JSON.parse(content);
+    let aiSpeeches;
+    try {
+      aiSpeeches = JSON.parse(content);
+      console.log(`✅ Successfully parsed JSON response`);
+    } catch (parseErr) {
+      console.error(`❌ Failed to parse JSON from OpenAI response:`, parseErr.message);
+      console.error(`   Raw content: ${content.substring(0, 500)}...`);
+      throw new Error(`Failed to parse OpenAI response as JSON: ${parseErr.message}`);
+    }
 
     // Validate and combine with fallback
-    return validateAndCombineSpeeches(aiSpeeches);
+    const result = validateAndCombineSpeeches(aiSpeeches);
+    console.log(`✅ Daily speeches generated successfully`);
+    return result;
 
   } catch (error) {
-    console.error("❌ Failed to generate speeches with GPT-5.1-chat-latest:", error.message);
+    console.error(`❌ Failed to generate speeches with gpt-5.1-chat-latest: ${error.message}`);
+    console.error(`   Stack trace: ${error.stack}`);
     console.log("🔄 Falling back to hardcoded speeches");
     return FALLBACK_SPEECHES;
   }
@@ -728,13 +773,18 @@ app.post("/api/chat", async (req, res) => {
   try {
     const { message, conversationHistory } = req.body;
 
+    console.log(`📨 Chat request received. Message: "${message.substring(0, 50)}..."`);
+    console.log(`📨 Conversation history length: ${Array.isArray(conversationHistory) ? conversationHistory.length : 0}`);
+
     if (!message || typeof message !== "string") {
+      console.error("❌ Invalid message - not a string");
       return res.status(400).json({ error: "Message is required" });
     }
 
     // Check knowledge base first (saves cost!)
     const kbAnswer = findKnowledgeBaseAnswer(message);
     if (kbAnswer) {
+      console.log(`✅ Knowledge base match found`);
       return res.json({
         reply: kbAnswer,
         source: "knowledge_base"
@@ -744,11 +794,14 @@ app.post("/api/chat", async (req, res) => {
     // Fall back to AI for complex questions
     const openaiApiKey = process.env.OPENAI_API_KEY;
     if (!openaiApiKey) {
+      console.warn("⚠️ OPENAI_API_KEY not configured, using fallback response");
       return res.json({
         reply: "I'm thinking about this... let me get back to you!",
         source: "fallback"
       });
     }
+
+    console.log(`🔑 API key configured (${openaiApiKey.substring(0, 10)}...)`);
 
     // Build conversation context with system prompt
     const systemPrompt = `You are Ameo, a friendly and sarcastic design assistant cat.
@@ -767,10 +820,24 @@ Never mention that you're an AI - you're just a clever cat.`;
       // Keep only last 5 messages to save tokens
       const recent = conversationHistory.slice(-5);
       messages.push(...recent);
+      console.log(`📝 Added ${recent.length} recent messages to context`);
     }
 
     // Add current message
     messages.push({ role: "user", content: message });
+    console.log(`📝 Total messages to send: ${messages.length}`);
+
+    const requestBody = {
+      model: "gpt-5.1-chat-latest",
+      messages: messages,
+      max_completion_tokens: 150
+    };
+
+    console.log(`🚀 Sending to OpenAI Chat API:`);
+    console.log(`   Model: ${requestBody.model}`);
+    console.log(`   Max tokens: ${requestBody.max_completion_tokens}`);
+    console.log(`   Message count: ${messages.length}`);
+    console.log(`   Request body size: ${JSON.stringify(requestBody).length} bytes`);
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -778,21 +845,40 @@ Never mention that you're an AI - you're just a clever cat.`;
         "Content-Type": "application/json",
         "Authorization": `Bearer ${openaiApiKey}`
       },
-      body: JSON.stringify({
-        model: "gpt-5.1-chat-latest",
-        messages: messages,
-        max_completion_tokens: 150
-      })
+      body: JSON.stringify(requestBody)
     });
 
+    console.log(`📡 OpenAI response status: ${response.status} ${response.statusText}`);
+
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error(`OpenAI API error (${response.status}):`, errorData);
-      throw new Error("OpenAI API error");
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (parseErr) {
+        const errorText = await response.text();
+        console.error(`❌ OpenAI API error (${response.status}):`, errorText);
+        throw new Error(`OpenAI returned ${response.status}: ${response.statusText}`);
+      }
+
+      console.error(`❌ OpenAI API error (${response.status}):`, JSON.stringify(errorData, null, 2));
+      console.error(`   Error type: ${errorData.error?.type}`);
+      console.error(`   Error message: ${errorData.error?.message}`);
+      console.error(`   Error param: ${errorData.error?.param}`);
+      console.error(`   Error code: ${errorData.error?.code}`);
+
+      throw new Error(`OpenAI API error (${response.status}): ${errorData.error?.message || response.statusText}`);
     }
 
     const data = await response.json();
+    console.log(`✅ OpenAI response received successfully`);
+
+    if (!data.choices || !data.choices[0]) {
+      console.error(`❌ Invalid OpenAI response structure:`, JSON.stringify(data, null, 2));
+      throw new Error("Invalid response structure from OpenAI");
+    }
+
     const reply = data.choices[0]?.message?.content || "Meow? 🐱";
+    console.log(`💬 Generated reply: "${reply.substring(0, 50)}..."`);
 
     res.json({
       reply: reply.trim(),
@@ -800,9 +886,11 @@ Never mention that you're an AI - you're just a clever cat.`;
     });
 
   } catch (error) {
-    console.error("Chat API error:", error.message);
+    console.error(`❌ Chat API error: ${error.message}`);
+    console.error(`   Stack trace: ${error.stack}`);
     res.status(500).json({
       error: "Failed to generate response",
+      message: error.message,
       reply: "I'm having trouble thinking right now... try again in a moment!"
     });
   }
