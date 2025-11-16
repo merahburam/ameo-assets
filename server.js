@@ -822,10 +822,11 @@ function findKnowledgeBaseAnswer(userMessage) {
 // Cat Chat API - Knowledge base + AI fallback
 app.post("/api/chat", async (req, res) => {
   try {
-    const { message, conversationHistory } = req.body;
+    const { message, conversationHistory, catName } = req.body;
 
     console.log(`📨 Chat request received. Message: "${message.substring(0, 50)}..."`);
     console.log(`📨 Conversation history length: ${Array.isArray(conversationHistory) ? conversationHistory.length : 0}`);
+    console.log(`📨 Cat name: ${catName || "not provided"}`);
 
     if (!message || typeof message !== "string") {
       console.error("❌ Invalid message - not a string");
@@ -854,8 +855,12 @@ app.post("/api/chat", async (req, res) => {
 
     console.log(`🔑 API key configured (${openaiApiKey.substring(0, 10)}...)`);
 
-    // Build conversation context with system prompt
-    const systemPrompt = `You are Ameo, a friendly and sarcastic design assistant cat.
+    // Use provided cat name or fallback to "Ameo"
+    const displayName = catName || "Ameo";
+    console.log(`🐱 Using display name: ${displayName}`);
+
+    // Build conversation context with system prompt using cat's name
+    const systemPrompt = `You are ${displayName}, a friendly and sarcastic design assistant cat.
 Your creator is Achmad, a product designer based in Indonesia.
 Keep responses short (1-2 sentences max), witty, and cat-themed when possible.
 Be helpful but maintain your sarcastic personality.
