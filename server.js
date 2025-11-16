@@ -164,6 +164,52 @@ app.get("/api/speech/daily", async (req, res) => {
 });
 
 // ============================================
+// Helper: Fetch with retry on transient errors
+// ============================================
+
+async function fetchWithRetry(url, options, maxRetries = 3, retryDelay = 1000) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`🔄 Attempt ${attempt}/${maxRetries}...`);
+      const response = await fetch(url, options);
+
+      // If successful, return response
+      if (response.ok) {
+        return response;
+      }
+
+      // Check if it's a retryable error (500, 502, 503, 429)
+      if (response.status === 500 || response.status === 502 || response.status === 503 || response.status === 429) {
+        lastError = new Error(`OpenAI ${response.status} ${response.statusText} - will retry`);
+
+        if (attempt < maxRetries) {
+          const delay = retryDelay * Math.pow(2, attempt - 1); // exponential backoff
+          console.warn(`⚠️ Retryable error (${response.status}), waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+      }
+
+      // Non-retryable error, return response as-is
+      return response;
+    } catch (error) {
+      lastError = error;
+
+      if (attempt < maxRetries) {
+        const delay = retryDelay * Math.pow(2, attempt - 1);
+        console.warn(`⚠️ Network error, waiting ${delay}ms before retry...`, error.message);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+    }
+  }
+
+  throw lastError || new Error("All retry attempts failed");
+}
+
+// ============================================
 // Generate Daily Speeches (GPT-5.1-chat-latest)
 // ============================================
 
@@ -195,14 +241,19 @@ async function generateDailySpeeches() {
     console.log(`   Max tokens: ${requestBody.max_completion_tokens}`);
     console.log(`   Prompt length: ${prompt.length} chars`);
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${openaiApiKey}`
+    const response = await fetchWithRetry(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${openaiApiKey}`
+        },
+        body: JSON.stringify(requestBody)
       },
-      body: JSON.stringify(requestBody)
-    });
+      3,  // maxRetries
+      2000  // retryDelay in ms
+    );
 
     console.log(`📡 OpenAI response status: ${response.status} ${response.statusText}`);
 
@@ -839,14 +890,19 @@ Never mention that you're an AI - you're just a clever cat.`;
     console.log(`   Message count: ${messages.length}`);
     console.log(`   Request body size: ${JSON.stringify(requestBody).length} bytes`);
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${openaiApiKey}`
+    const response = await fetchWithRetry(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${openaiApiKey}`
+        },
+        body: JSON.stringify(requestBody)
       },
-      body: JSON.stringify(requestBody)
-    });
+      3,  // maxRetries
+      2000  // retryDelay in ms
+    );
 
     console.log(`📡 OpenAI response status: ${response.status} ${response.statusText}`);
 
