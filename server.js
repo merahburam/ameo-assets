@@ -378,7 +378,7 @@ function validateAndCombineSpeeches(aiSpeeches) {
 
 app.post("/api/feedback", async (req, res) => {
   try {
-    const { frames } = req.body;
+    const { frames, catName } = req.body;
 
     if (!frames || !Array.isArray(frames) || frames.length === 0) {
       return res.status(400).json({
@@ -387,6 +387,7 @@ app.post("/api/feedback", async (req, res) => {
     }
 
     console.log(`Processing feedback for ${frames.length} frame(s)`);
+    console.log(`Cat name: ${catName || "not provided"}`);
     // Log what we received from the plugin
     frames.forEach((frame, idx) => {
       console.log(`   [${idx}] ${frame.frameData.name} - ${frame.svgBase64 ? `PNG (${frame.svgBase64.length} chars)` : 'No PNG'}`);
@@ -400,7 +401,7 @@ app.post("/api/feedback", async (req, res) => {
           ...frame.frameData,
           svgBase64: frame.svgBase64 // Include PNG if it exists
         };
-        const feedbackArray = await generateDesignFeedback(frameDataWithPNG);
+        const feedbackArray = await generateDesignFeedback(frameDataWithPNG, catName || "Ameo");
         // feedbackArray is now an array of feedback items
         feedbackArray.forEach((feedback) => {
           feedbackList.push({
@@ -513,7 +514,7 @@ function parseNumberedListFormat(text) {
 // AI Feedback Implementation (OpenAI GPT-5.1)
 // ============================================
 
-async function generateDesignFeedback(frameData) {
+async function generateDesignFeedback(frameData, catName = "Ameo") {
   const openaiApiKey = process.env.OPENAI_API_KEY;
 
   if (!openaiApiKey) {
@@ -524,8 +525,8 @@ async function generateDesignFeedback(frameData) {
   console.log("✅ OpenAI API key is configured");
 
   try {
-    // Build base prompt
-    let textContent = `You are Ameo, a friendly UX/UI design expert cat. Analyze this Figma frame and provide detailed, specific feedback.
+    // Build base prompt with dynamic cat name
+    let textContent = `You are ${catName}, a friendly UX/UI design expert cat. Analyze this Figma frame and provide detailed, specific feedback.
 
 Frame: ${frameData.name} (${frameData.width}x${frameData.height}px)
 Has colors: ${frameData.fills ? frameData.fills.length > 0 : false}
@@ -784,9 +785,9 @@ const CAT_KNOWLEDGE_BASE = {
   "achmad": "That's my creator! He's a talented product designer from Indonesia.",
   "founder|creator": "My creator is Achmad, a product designer based in Indonesia.",
 
-  // About Ameo
-  "who are you|what are you|what's your name": "I'm Ameo, your sarcastic design assistant cat! Here to make your design journey less painful.",
-  "about ameo|about me": "I'm Ameo - part design consultant, part comedian, 100% cat. Here to help with your design work while being cheeky about it.",
+  // About the user's cat (uses {CAT_NAME} placeholder for dynamic replacement)
+  "who are you|what are you|what's your name": "I'm {CAT_NAME}, your sarcastic design assistant cat! Here to make your design journey less painful.",
+  "about ameo|about me": "I'm {CAT_NAME} - part design consultant, part comedian, 100% cat. Here to help with your design work while being cheeky about it.",
   "what do you do": "I analyze your designs, give feedback, and roast your kerning. All with a smile.",
 
   // Fun interactions
@@ -803,15 +804,16 @@ const CAT_KNOWLEDGE_BASE = {
   "help|tips": "Ask me anything about design! I've got opinions on everything from colors to kerning.",
 };
 
-// Find knowledge base answer from user message
-function findKnowledgeBaseAnswer(userMessage) {
+// Find knowledge base answer from user message and replace {CAT_NAME} with actual cat name
+function findKnowledgeBaseAnswer(userMessage, catName = "Ameo") {
   const lowerMessage = userMessage.toLowerCase().trim();
 
   for (const [patterns, answer] of Object.entries(CAT_KNOWLEDGE_BASE)) {
     const patternList = patterns.split("|");
     for (const pattern of patternList) {
       if (lowerMessage.includes(pattern.toLowerCase())) {
-        return answer;
+        // Replace {CAT_NAME} placeholder with actual cat name
+        return answer.replace(/{CAT_NAME}/g, catName || "Ameo");
       }
     }
   }
@@ -834,7 +836,7 @@ app.post("/api/chat", async (req, res) => {
     }
 
     // Check knowledge base first (saves cost!)
-    const kbAnswer = findKnowledgeBaseAnswer(message);
+    const kbAnswer = findKnowledgeBaseAnswer(message, catName || "Ameo");
     if (kbAnswer) {
       console.log(`✅ Knowledge base match found`);
       return res.json({
