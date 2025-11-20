@@ -1388,16 +1388,18 @@ app.get("/api/typing/:conversation_id", async (req, res) => {
 app.get("/api/messages/profile/:cat_name", async (req, res) => {
   try {
     const { cat_name } = req.params;
+    console.log(`📥 GET /api/messages/profile/${cat_name}`);
 
     // Get user by cat name
     const userResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [cat_name]);
 
     if (userResult.rows.length === 0) {
-      console.log(`User not found: ${cat_name}`);
+      console.log(`❌ User not found: ${cat_name}`);
       return res.status(404).json({ error: "User not found" });
     }
 
     const userId = userResult.rows[0].id;
+    console.log(`✅ Found user ${cat_name} (ID: ${userId})`);
 
     // Get or create profile
     let profileResult = await pool.query(
@@ -1407,6 +1409,7 @@ app.get("/api/messages/profile/:cat_name", async (req, res) => {
 
     // If no profile exists, create one with defaults
     if (profileResult.rows.length === 0) {
+      console.log(`⚙️ Creating default profile for ${cat_name}`);
       await pool.query(
         "INSERT INTO profiles (user_id, status, avatar) VALUES ($1, 'Available', '🐾')",
         [userId]
@@ -1414,9 +1417,10 @@ app.get("/api/messages/profile/:cat_name", async (req, res) => {
       return res.json({ status: "Available", avatar: "🐾" });
     }
 
+    console.log(`✅ Returning profile for ${cat_name}:`, profileResult.rows[0]);
     res.json(profileResult.rows[0]);
   } catch (error) {
-    console.error("Get profile error:", error.message);
+    console.error("❌ Get profile error:", error.message);
     res.status(500).json({ error: "Failed to get profile" });
   }
 });
