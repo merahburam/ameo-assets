@@ -1008,6 +1008,18 @@ async function initializeDatabase() {
       );
     `);
 
+    // Create profiles table for user status and avatar
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS profiles (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+        status VARCHAR(255) DEFAULT 'Available',
+        avatar VARCHAR(10) DEFAULT '🐾',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     console.log("Database tables initialized successfully");
   } catch (error) {
     console.error("Database initialization error:", error.message);
@@ -1365,6 +1377,132 @@ app.get("/api/typing/:conversation_id", async (req, res) => {
   } catch (error) {
     console.error("Get typing status error:", error.message);
     res.status(500).json({ error: "Failed to get typing status" });
+  }
+});
+
+// ============================================
+// User Profile API
+// ============================================
+
+// Get user profile (status and avatar)
+app.get("/api/messages/profile/:cat_name", async (req, res) => {
+  try {
+    const { cat_name } = req.params;
+
+    // Get user by cat name
+    const userResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [cat_name]);
+
+    if (userResult.rows.length === 0) {
+      console.log(`User not found: ${cat_name}`);
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userResult.rows[0].id;
+
+    // Get or create profile
+    let profileResult = await pool.query(
+      "SELECT status, avatar FROM profiles WHERE user_id = $1",
+      [userId]
+    );
+
+    // If no profile exists, create one with defaults
+    if (profileResult.rows.length === 0) {
+      await pool.query(
+        "INSERT INTO profiles (user_id, status, avatar) VALUES ($1, 'Available', '🐾')",
+        [userId]
+      );
+      return res.json({ status: "Available", avatar: "🐾" });
+    }
+
+    res.json(profileResult.rows[0]);
+  } catch (error) {
+    console.error("Get profile error:", error.message);
+    res.status(500).json({ error: "Failed to get profile" });
+  }
+});
+
+// Update user profile (status and/or avatar)
+app.put("/api/messages/profile/:cat_name", async (req, res) => {
+  try {
+    const { cat_name } = req.params;
+    const { status, avatar } = req.body;
+
+    // Get user by cat name
+    const userResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [cat_name]);
+
+    if (userResult.rows.length === 0) {
+      console.log(`User not found: ${cat_name}`);
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userResult.rows[0].id;
+
+    // Ensure profile exists
+    await pool.query(
+      "INSERT INTO profiles (user_id, status, avatar) VALUES ($1, 'Available', '🐾') ON CONFLICT (user_id) DO NOTHING",
+      [userId]
+    );
+
+    // Build update query dynamically based on what's provided
+    let updateQuery = "UPDATE profiles SET ";
+    let params = [];
+    let paramCount = 1;
+
+    if (status !== undefined) {
+      updateQuery += `status = $${paramCount++}`;
+      params.push(status);
+    }
+
+    if (avatar !== undefined) {
+      if (params.length > 0) updateQuery += ", ";
+      updateQuery += `avatar = $${paramCount++}`;
+      params.push(avatar);
+    }
+
+    if (params.length === 0) {
+      return res.status(400).json({ error: "No fields to update" });
+    }
+
+    updateQuery += `, updated_at = CURRENT_TIMESTAMP WHERE user_id = $${paramCount}`;
+    params.push(userId);
+
+    await pool.query(updateQuery, params);
+    console.log(`✅ Profile updated for ${cat_name}: status=${status}, avatar=${avatar}`);
+
+    res.json({ success: true, status, avatar });
+  } catch (error) {
+    console.error("Update profile error:", error.message);
+    res.status(500).json({ error: "Failed to update profile" });
+  }
+});
+
+// Send friend invitation
+app.post("/api/messages/invite", async (req, res) => {
+  try {
+    const { fromCatName, toCatName } = req.body;
+
+    if (!fromCatName || !toCatName) {
+      return res.status(400).json({ error: "Missing fromCatName or toCatName" });
+    }
+
+    // Get user IDs
+    const fromResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [fromCatName]);
+    const toResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [toCatName]);
+
+    if (fromResult.rows.length === 0 || toResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const fromId = fromResult.rows[0].id;
+    const toId = toResult.rows[0].id;
+
+    // TODO: Create friendship table and store invitations
+    // For now, just return success
+    console.log(`📨 Invitation sent from ${fromCatName} to ${toCatName}`);
+    res.json({ success: true, message: "Invitation sent" });
+  } catch (error) {
+    console.error("Send invitation error:", error.message);
+    res.status(500).json({ error: "Failed to send invitation" });
   }
 });
 
