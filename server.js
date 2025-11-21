@@ -1403,9 +1403,14 @@ app.get("/api/messages/profile/:cat_name", async (req, res) => {
   try {
     const { cat_name } = req.params;
     console.log(`📥 GET /api/messages/profile/${cat_name}`);
+    console.log(`   Cat name (exact): "${cat_name}" (length: ${cat_name.length})`);
 
-    // Get user by cat name
-    const userResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [cat_name]);
+    // First, let's see what users exist
+    const allUsers = await pool.query("SELECT id, cat_name FROM users");
+    console.log(`   All users in database:`, allUsers.rows);
+
+    // Get user by cat name (case-insensitive)
+    const userResult = await pool.query("SELECT id FROM users WHERE LOWER(cat_name) = LOWER($1)", [cat_name]);
 
     if (userResult.rows.length === 0) {
       console.log(`❌ User not found: ${cat_name}`);
