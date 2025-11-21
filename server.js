@@ -1348,6 +1348,71 @@ app.put("/api/messages/profile/:cat_name", async (req, res) => {
   }
 });
 
+// Get user's friends list (MUST come BEFORE /:user/:other pattern)
+app.get("/api/messages/friends/:cat_name", async (req, res) => {
+  try {
+    const { cat_name } = req.params;
+    console.log(`👥 Fetching friends for: ${cat_name}`);
+
+    // Get user ID
+    const userResult = await pool.query("SELECT id FROM users WHERE LOWER(cat_name) = LOWER($1)", [cat_name]);
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userResult.rows[0].id;
+
+    // Get all friends (both directions, only accepted friendships)
+    const friendsResult = await pool.query(`
+      SELECT
+        CASE
+          WHEN user1_id = $1 THEN user2_id
+          ELSE user1_id
+        END as friend_id
+      FROM friendships
+      WHERE (user1_id = $1 OR user2_id = $1)
+        AND status = 'accepted'
+    `, [userId]);
+
+    // Get friend details and profiles
+    const friends = await Promise.all(
+      friendsResult.rows.map(async (row) => {
+        const friendId = row.friend_id;
+
+        // Get friend's cat name
+        const friendUserResult = await pool.query("SELECT cat_name FROM users WHERE id = $1", [friendId]);
+        if (friendUserResult.rows.length === 0) return null;
+
+        const friendCatName = friendUserResult.rows[0].cat_name;
+
+        // Get friend's profile
+        const profileResult = await pool.query(
+          "SELECT status, avatar FROM profiles WHERE user_id = $1",
+          [friendId]
+        );
+
+        const profile = profileResult.rows[0] || { status: "Available", avatar: "🐾" };
+
+        return {
+          id: friendId.toString(),
+          catName: friendCatName,
+          status: profile.status,
+          emoji: profile.avatar,
+        };
+      })
+    );
+
+    // Filter out null values
+    const validFriends = friends.filter(f => f !== null);
+
+    console.log(`✅ Found ${validFriends.length} friends for ${cat_name}`);
+    res.json({ friends: validFriends });
+  } catch (error) {
+    console.error("Get friends error:", error.message);
+    res.status(500).json({ error: "Failed to get friends" });
+  }
+});
+
 // Get conversation with a specific user
 app.get("/api/messages/:user_cat_name/:other_cat_name", async (req, res) => {
   try {
@@ -1502,71 +1567,6 @@ app.get("/api/typing/:conversation_id", async (req, res) => {
   } catch (error) {
     console.error("Get typing status error:", error.message);
     res.status(500).json({ error: "Failed to get typing status" });
-  }
-});
-
-// Get user's friends list
-app.get("/api/messages/friends/:cat_name", async (req, res) => {
-  try {
-    const { cat_name } = req.params;
-    console.log(`👥 Fetching friends for: ${cat_name}`);
-
-    // Get user ID
-    const userResult = await pool.query("SELECT id FROM users WHERE LOWER(cat_name) = LOWER($1)", [cat_name]);
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const userId = userResult.rows[0].id;
-
-    // Get all friends (both directions, only accepted friendships)
-    const friendsResult = await pool.query(`
-      SELECT
-        CASE
-          WHEN user1_id = $1 THEN user2_id
-          ELSE user1_id
-        END as friend_id
-      FROM friendships
-      WHERE (user1_id = $1 OR user2_id = $1)
-        AND status = 'accepted'
-    `, [userId]);
-
-    // Get friend details and profiles
-    const friends = await Promise.all(
-      friendsResult.rows.map(async (row) => {
-        const friendId = row.friend_id;
-
-        // Get friend's cat name
-        const friendUserResult = await pool.query("SELECT cat_name FROM users WHERE id = $1", [friendId]);
-        if (friendUserResult.rows.length === 0) return null;
-
-        const friendCatName = friendUserResult.rows[0].cat_name;
-
-        // Get friend's profile
-        const profileResult = await pool.query(
-          "SELECT status, avatar FROM profiles WHERE user_id = $1",
-          [friendId]
-        );
-
-        const profile = profileResult.rows[0] || { status: "Available", avatar: "🐾" };
-
-        return {
-          id: friendId.toString(),
-          catName: friendCatName,
-          status: profile.status,
-          emoji: profile.avatar,
-        };
-      })
-    );
-
-    // Filter out null values
-    const validFriends = friends.filter(f => f !== null);
-
-    console.log(`✅ Found ${validFriends.length} friends for ${cat_name}`);
-    res.json({ friends: validFriends });
-  } catch (error) {
-    console.error("Get friends error:", error.message);
-    res.status(500).json({ error: "Failed to get friends" });
   }
 });
 
