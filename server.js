@@ -1569,12 +1569,12 @@ app.post("/api/messages/invite", async (req, res) => {
   }
 });
 
-// Unfriend a user (MUST come BEFORE generic /:param/:param routes)
+// Unfriend a user - DELETE friendship record
 app.post("/api/messages/unfriend/:friendship_id", async (req, res) => {
   try {
     const { friendship_id } = req.params;
 
-    console.log(`👋 Unfriending friendship ${friendship_id}`);
+    console.log(`👋 Attempting to unfriend friendship ID: ${friendship_id}`);
 
     // Delete friendship record
     const result = await pool.query(
@@ -1583,13 +1583,14 @@ app.post("/api/messages/unfriend/:friendship_id", async (req, res) => {
     );
 
     if (result.rows.length === 0) {
+      console.log(`❌ Friendship ${friendship_id} not found`);
       return res.status(404).json({ error: "Friendship not found" });
     }
 
-    console.log(`✅ Friendship ${friendship_id} deleted successfully`);
+    console.log(`✅ Successfully deleted friendship ${friendship_id}`);
     res.json({ success: true, message: "Unfriended successfully" });
   } catch (error) {
-    console.error("Unfriend error:", error.message);
+    console.error(`❌ Unfriend error for ID ${friendship_id}:`, error.message);
     res.status(500).json({ error: "Failed to unfriend" });
   }
 });
