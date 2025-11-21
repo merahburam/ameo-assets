@@ -1018,6 +1018,17 @@ async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+
+      CREATE TABLE IF NOT EXISTS friendships (
+        id SERIAL PRIMARY KEY,
+        user1_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        user2_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        status VARCHAR(50) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user1_id, user2_id),
+        CHECK (user1_id < user2_id)
+      );
     `);
 
     console.log("Database tables initialized successfully");
@@ -1494,6 +1505,71 @@ app.get("/api/typing/:conversation_id", async (req, res) => {
   }
 });
 
+// Get user's friends list
+app.get("/api/messages/friends/:cat_name", async (req, res) => {
+  try {
+    const { cat_name } = req.params;
+    console.log(`👥 Fetching friends for: ${cat_name}`);
+
+    // Get user ID
+    const userResult = await pool.query("SELECT id FROM users WHERE LOWER(cat_name) = LOWER($1)", [cat_name]);
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userResult.rows[0].id;
+
+    // Get all friends (both directions, only accepted friendships)
+    const friendsResult = await pool.query(`
+      SELECT
+        CASE
+          WHEN user1_id = $1 THEN user2_id
+          ELSE user1_id
+        END as friend_id
+      FROM friendships
+      WHERE (user1_id = $1 OR user2_id = $1)
+        AND status = 'accepted'
+    `, [userId]);
+
+    // Get friend details and profiles
+    const friends = await Promise.all(
+      friendsResult.rows.map(async (row) => {
+        const friendId = row.friend_id;
+
+        // Get friend's cat name
+        const friendUserResult = await pool.query("SELECT cat_name FROM users WHERE id = $1", [friendId]);
+        if (friendUserResult.rows.length === 0) return null;
+
+        const friendCatName = friendUserResult.rows[0].cat_name;
+
+        // Get friend's profile
+        const profileResult = await pool.query(
+          "SELECT status, avatar FROM profiles WHERE user_id = $1",
+          [friendId]
+        );
+
+        const profile = profileResult.rows[0] || { status: "Available", avatar: "🐾" };
+
+        return {
+          id: friendId.toString(),
+          catName: friendCatName,
+          status: profile.status,
+          emoji: profile.avatar,
+        };
+      })
+    );
+
+    // Filter out null values
+    const validFriends = friends.filter(f => f !== null);
+
+    console.log(`✅ Found ${validFriends.length} friends for ${cat_name}`);
+    res.json({ friends: validFriends });
+  } catch (error) {
+    console.error("Get friends error:", error.message);
+    res.status(500).json({ error: "Failed to get friends" });
+  }
+});
+
 // Send friend invitation
 app.post("/api/messages/invite", async (req, res) => {
   try {
@@ -1514,10 +1590,20 @@ app.post("/api/messages/invite", async (req, res) => {
     const fromId = fromResult.rows[0].id;
     const toId = toResult.rows[0].id;
 
-    // TODO: Create friendship table and store invitations
-    // For now, just return success
-    console.log(`📨 Invitation sent from ${fromCatName} to ${toCatName}`);
-    res.json({ success: true, message: "Invitation sent" });
+    // Ensure consistent ordering (lower ID first)
+    const user1_id = Math.min(fromId, toId);
+    const user2_id = Math.max(fromId, toId);
+
+    // Insert or update friendship
+    await pool.query(`
+      INSERT INTO friendships (user1_id, user2_id, status)
+      VALUES ($1, $2, 'accepted')
+      ON CONFLICT (user1_id, user2_id)
+      DO UPDATE SET status = 'accepted', updated_at = CURRENT_TIMESTAMP
+    `, [user1_id, user2_id]);
+
+    console.log(`✅ Friendship created/updated between ${fromCatName} (ID: ${fromId}) and ${toCatName} (ID: ${toId})`);
+    res.json({ success: true, message: "Friendship established" });
   } catch (error) {
     console.error("Send invitation error:", error.message);
     res.status(500).json({ error: "Failed to send invitation" });
