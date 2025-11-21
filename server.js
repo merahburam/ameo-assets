@@ -1384,6 +1384,20 @@ app.get("/api/typing/:conversation_id", async (req, res) => {
 // User Profile API
 // ============================================
 
+// Test endpoint to verify tables exist
+app.get("/api/messages/profile/test/tables", async (req, res) => {
+  try {
+    const tables = await pool.query(`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+    `);
+    res.json({ tables: tables.rows.map(row => row.table_name) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get user profile (status and avatar)
 app.get("/api/messages/profile/:cat_name", async (req, res) => {
   try {
