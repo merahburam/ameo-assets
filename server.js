@@ -1570,6 +1570,118 @@ app.get("/api/typing/:conversation_id", async (req, res) => {
   }
 });
 
+// Get pending invitations for a user
+app.get("/api/messages/invitations/:cat_name", async (req, res) => {
+  try {
+    const { cat_name } = req.params;
+    console.log(`📬 Fetching invitations for: ${cat_name}`);
+
+    // Get user ID
+    const userResult = await pool.query("SELECT id FROM users WHERE LOWER(cat_name) = LOWER($1)", [cat_name]);
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userResult.rows[0].id;
+
+    // Get all pending invitations where this user is user2 (receiver)
+    const invitationsResult = await pool.query(`
+      SELECT
+        f.id as friendship_id,
+        CASE
+          WHEN f.user1_id = $1 THEN f.user2_id
+          ELSE f.user1_id
+        END as from_user_id
+      FROM friendships f
+      WHERE ((f.user1_id = $1 AND f.user2_id > $1) OR (f.user2_id = $1 AND f.user1_id < $1))
+        AND f.status = 'pending'
+    `, [userId]);
+
+    // Get invitation details and profiles
+    const invitations = await Promise.all(
+      invitationsResult.rows.map(async (row) => {
+        const fromUserId = row.from_user_id;
+
+        // Get inviter's cat name
+        const fromUserResult = await pool.query("SELECT cat_name FROM users WHERE id = $1", [fromUserId]);
+        if (fromUserResult.rows.length === 0) return null;
+
+        const fromCatName = fromUserResult.rows[0].cat_name;
+
+        // Get inviter's profile
+        const profileResult = await pool.query(
+          "SELECT status, avatar FROM profiles WHERE user_id = $1",
+          [fromUserId]
+        );
+
+        const profile = profileResult.rows[0] || { status: "Available", avatar: "🐾" };
+
+        return {
+          id: row.friendship_id.toString(),
+          catName: fromCatName,
+          status: "Pending invitation",
+          emoji: profile.avatar,
+        };
+      })
+    );
+
+    // Filter out null values
+    const validInvitations = invitations.filter(i => i !== null);
+
+    console.log(`✅ Found ${validInvitations.length} invitations for ${cat_name}`);
+    res.json({ invitations: validInvitations });
+  } catch (error) {
+    console.error("Get invitations error:", error.message);
+    res.status(500).json({ error: "Failed to get invitations" });
+  }
+});
+
+// Accept friendship invitation
+app.post("/api/messages/invitations/:friendship_id/accept", async (req, res) => {
+  try {
+    const { friendship_id } = req.params;
+
+    // Update friendship status to accepted
+    const result = await pool.query(
+      "UPDATE friendships SET status = 'accepted', updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING user1_id, user2_id",
+      [friendship_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Friendship not found" });
+    }
+
+    console.log(`✅ Invitation accepted for friendship ${friendship_id}`);
+    res.json({ success: true, message: "Invitation accepted" });
+  } catch (error) {
+    console.error("Accept invitation error:", error.message);
+    res.status(500).json({ error: "Failed to accept invitation" });
+  }
+});
+
+// Reject friendship invitation
+app.post("/api/messages/invitations/:friendship_id/reject", async (req, res) => {
+  try {
+    const { friendship_id } = req.params;
+
+    // Delete friendship record
+    const result = await pool.query(
+      "DELETE FROM friendships WHERE id = $1 RETURNING id",
+      [friendship_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Friendship not found" });
+    }
+
+    console.log(`✅ Invitation rejected for friendship ${friendship_id}`);
+    res.json({ success: true, message: "Invitation rejected" });
+  } catch (error) {
+    console.error("Reject invitation error:", error.message);
+    res.status(500).json({ error: "Failed to reject invitation" });
+  }
+});
+
 // Send friend invitation
 app.post("/api/messages/invite", async (req, res) => {
   try {
@@ -1594,16 +1706,16 @@ app.post("/api/messages/invite", async (req, res) => {
     const user1_id = Math.min(fromId, toId);
     const user2_id = Math.max(fromId, toId);
 
-    // Insert or update friendship
+    // Insert or update friendship with pending status
     await pool.query(`
       INSERT INTO friendships (user1_id, user2_id, status)
-      VALUES ($1, $2, 'accepted')
+      VALUES ($1, $2, 'pending')
       ON CONFLICT (user1_id, user2_id)
-      DO UPDATE SET status = 'accepted', updated_at = CURRENT_TIMESTAMP
+      DO UPDATE SET status = 'pending', updated_at = CURRENT_TIMESTAMP
     `, [user1_id, user2_id]);
 
-    console.log(`✅ Friendship created/updated between ${fromCatName} (ID: ${fromId}) and ${toCatName} (ID: ${toId})`);
-    res.json({ success: true, message: "Friendship established" });
+    console.log(`📨 Invitation sent from ${fromCatName} (ID: ${fromId}) to ${toCatName} (ID: ${toId})`);
+    res.json({ success: true, message: "Invitation sent" });
   } catch (error) {
     console.error("Send invitation error:", error.message);
     res.status(500).json({ error: "Failed to send invitation" });
