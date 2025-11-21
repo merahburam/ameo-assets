@@ -1569,7 +1569,7 @@ app.post("/api/messages/invite", async (req, res) => {
   }
 });
 
-// Unfriend a user (delete friendship record)
+// Unfriend a user (MUST come BEFORE generic /:param/:param routes)
 app.post("/api/messages/unfriend/:friendship_id", async (req, res) => {
   try {
     const { friendship_id } = req.params;
@@ -1594,7 +1594,7 @@ app.post("/api/messages/unfriend/:friendship_id", async (req, res) => {
   }
 });
 
-// Get conversation with a specific user (MUST come AFTER specific routes like /friends and /invitations)
+// Get conversation with a specific user (MUST come AFTER specific routes like /friends, /invitations, /unfriend, etc.)
 app.get("/api/messages/:user_cat_name/:other_cat_name", async (req, res) => {
   try {
     const { user_cat_name, other_cat_name } = req.params;
