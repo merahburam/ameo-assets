@@ -1569,6 +1569,31 @@ app.post("/api/messages/invite", async (req, res) => {
   }
 });
 
+// Unfriend a user (delete friendship record)
+app.post("/api/messages/unfriend/:friendship_id", async (req, res) => {
+  try {
+    const { friendship_id } = req.params;
+
+    console.log(`👋 Unfriending friendship ${friendship_id}`);
+
+    // Delete friendship record
+    const result = await pool.query(
+      "DELETE FROM friendships WHERE id = $1 RETURNING user1_id, user2_id",
+      [friendship_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Friendship not found" });
+    }
+
+    console.log(`✅ Friendship ${friendship_id} deleted successfully`);
+    res.json({ success: true, message: "Unfriended successfully" });
+  } catch (error) {
+    console.error("Unfriend error:", error.message);
+    res.status(500).json({ error: "Failed to unfriend" });
+  }
+});
+
 // Get conversation with a specific user (MUST come AFTER specific routes like /friends and /invitations)
 app.get("/api/messages/:user_cat_name/:other_cat_name", async (req, res) => {
   try {
