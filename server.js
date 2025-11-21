@@ -1223,6 +1223,120 @@ app.post("/api/messages/send", async (req, res) => {
   }
 });
 
+// ============================================
+// User Profile API (must come BEFORE /:user/:other routes)
+// ============================================
+
+// Test endpoint to verify tables exist
+app.get("/api/messages/profile/test/tables", async (req, res) => {
+  try {
+    const tables = await pool.query(`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+    `);
+    res.json({ tables: tables.rows.map(row => row.table_name) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get user profile (status and avatar)
+app.get("/api/messages/profile/:cat_name", async (req, res) => {
+  try {
+    const { cat_name } = req.params;
+    console.log(`📥 GET /api/messages/profile/${cat_name}`);
+
+    // Get user by cat name (case-insensitive)
+    const userResult = await pool.query("SELECT id FROM users WHERE LOWER(cat_name) = LOWER($1)", [cat_name]);
+
+    if (userResult.rows.length === 0) {
+      console.log(`❌ User not found: ${cat_name}`);
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userResult.rows[0].id;
+    console.log(`✅ Found user ${cat_name} (ID: ${userId})`);
+
+    // Get or create profile
+    let profileResult = await pool.query(
+      "SELECT status, avatar FROM profiles WHERE user_id = $1",
+      [userId]
+    );
+
+    // If no profile exists, create one with defaults
+    if (profileResult.rows.length === 0) {
+      console.log(`⚙️ Creating default profile for ${cat_name}`);
+      await pool.query(
+        "INSERT INTO profiles (user_id, status, avatar) VALUES ($1, 'Available', '🐾')",
+        [userId]
+      );
+      return res.json({ status: "Available", avatar: "🐾" });
+    }
+
+    console.log(`✅ Returning profile for ${cat_name}:`, profileResult.rows[0]);
+    res.json(profileResult.rows[0]);
+  } catch (error) {
+    console.error("❌ Get profile error:", error.message);
+    res.status(500).json({ error: "Failed to get profile" });
+  }
+});
+
+// Update user profile (status and/or avatar)
+app.put("/api/messages/profile/:cat_name", async (req, res) => {
+  try {
+    const { cat_name } = req.params;
+    const { status, avatar } = req.body;
+
+    // Get user by cat name
+    const userResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [cat_name]);
+
+    if (userResult.rows.length === 0) {
+      console.log(`User not found: ${cat_name}`);
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userId = userResult.rows[0].id;
+
+    // Ensure profile exists
+    await pool.query(
+      "INSERT INTO profiles (user_id, status, avatar) VALUES ($1, 'Available', '🐾') ON CONFLICT (user_id) DO NOTHING",
+      [userId]
+    );
+
+    // Build update query dynamically based on what's provided
+    let updateQuery = "UPDATE profiles SET ";
+    let params = [];
+    let paramCount = 1;
+
+    if (status !== undefined) {
+      updateQuery += `status = $${paramCount++}`;
+      params.push(status);
+    }
+
+    if (avatar !== undefined) {
+      if (params.length > 0) updateQuery += ", ";
+      updateQuery += `avatar = $${paramCount++}`;
+      params.push(avatar);
+    }
+
+    if (params.length === 0) {
+      return res.status(400).json({ error: "No fields to update" });
+    }
+
+    updateQuery += `, updated_at = CURRENT_TIMESTAMP WHERE user_id = $${paramCount}`;
+    params.push(userId);
+
+    await pool.query(updateQuery, params);
+    console.log(`✅ Profile updated for ${cat_name}: status=${status}, avatar=${avatar}`);
+
+    res.json({ success: true, status, avatar });
+  } catch (error) {
+    console.error("Update profile error:", error.message);
+    res.status(500).json({ error: "Failed to update profile" });
+  }
+});
+
 // Get conversation with a specific user
 app.get("/api/messages/:user_cat_name/:other_cat_name", async (req, res) => {
   try {
@@ -1377,125 +1491,6 @@ app.get("/api/typing/:conversation_id", async (req, res) => {
   } catch (error) {
     console.error("Get typing status error:", error.message);
     res.status(500).json({ error: "Failed to get typing status" });
-  }
-});
-
-// ============================================
-// User Profile API
-// ============================================
-
-// Test endpoint to verify tables exist
-app.get("/api/messages/profile/test/tables", async (req, res) => {
-  try {
-    const tables = await pool.query(`
-      SELECT table_name
-      FROM information_schema.tables
-      WHERE table_schema = 'public'
-    `);
-    res.json({ tables: tables.rows.map(row => row.table_name) });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get user profile (status and avatar)
-app.get("/api/messages/profile/:cat_name", async (req, res) => {
-  try {
-    const { cat_name } = req.params;
-    console.log(`📥 GET /api/messages/profile/${cat_name}`);
-    console.log(`   Cat name (exact): "${cat_name}" (length: ${cat_name.length})`);
-
-    // First, let's see what users exist
-    const allUsers = await pool.query("SELECT id, cat_name FROM users");
-    console.log(`   All users in database:`, allUsers.rows);
-
-    // Get user by cat name (case-insensitive)
-    const userResult = await pool.query("SELECT id FROM users WHERE LOWER(cat_name) = LOWER($1)", [cat_name]);
-
-    if (userResult.rows.length === 0) {
-      console.log(`❌ User not found: ${cat_name}`);
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const userId = userResult.rows[0].id;
-    console.log(`✅ Found user ${cat_name} (ID: ${userId})`);
-
-    // Get or create profile
-    let profileResult = await pool.query(
-      "SELECT status, avatar FROM profiles WHERE user_id = $1",
-      [userId]
-    );
-
-    // If no profile exists, create one with defaults
-    if (profileResult.rows.length === 0) {
-      console.log(`⚙️ Creating default profile for ${cat_name}`);
-      await pool.query(
-        "INSERT INTO profiles (user_id, status, avatar) VALUES ($1, 'Available', '🐾')",
-        [userId]
-      );
-      return res.json({ status: "Available", avatar: "🐾" });
-    }
-
-    console.log(`✅ Returning profile for ${cat_name}:`, profileResult.rows[0]);
-    res.json(profileResult.rows[0]);
-  } catch (error) {
-    console.error("❌ Get profile error:", error.message);
-    res.status(500).json({ error: "Failed to get profile" });
-  }
-});
-
-// Update user profile (status and/or avatar)
-app.put("/api/messages/profile/:cat_name", async (req, res) => {
-  try {
-    const { cat_name } = req.params;
-    const { status, avatar } = req.body;
-
-    // Get user by cat name
-    const userResult = await pool.query("SELECT id FROM users WHERE cat_name = $1", [cat_name]);
-
-    if (userResult.rows.length === 0) {
-      console.log(`User not found: ${cat_name}`);
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const userId = userResult.rows[0].id;
-
-    // Ensure profile exists
-    await pool.query(
-      "INSERT INTO profiles (user_id, status, avatar) VALUES ($1, 'Available', '🐾') ON CONFLICT (user_id) DO NOTHING",
-      [userId]
-    );
-
-    // Build update query dynamically based on what's provided
-    let updateQuery = "UPDATE profiles SET ";
-    let params = [];
-    let paramCount = 1;
-
-    if (status !== undefined) {
-      updateQuery += `status = $${paramCount++}`;
-      params.push(status);
-    }
-
-    if (avatar !== undefined) {
-      if (params.length > 0) updateQuery += ", ";
-      updateQuery += `avatar = $${paramCount++}`;
-      params.push(avatar);
-    }
-
-    if (params.length === 0) {
-      return res.status(400).json({ error: "No fields to update" });
-    }
-
-    updateQuery += `, updated_at = CURRENT_TIMESTAMP WHERE user_id = $${paramCount}`;
-    params.push(userId);
-
-    await pool.query(updateQuery, params);
-    console.log(`✅ Profile updated for ${cat_name}: status=${status}, avatar=${avatar}`);
-
-    res.json({ success: true, status, avatar });
-  } catch (error) {
-    console.error("Update profile error:", error.message);
-    res.status(500).json({ error: "Failed to update profile" });
   }
 });
 
